@@ -15,6 +15,11 @@ let package = Package(
     products: [
         .executable(name: "Erst", targets: ["ErstApp"]),
     ],
+    dependencies: [
+        // In-app updates: downloads, verifies the EdDSA signature and the code signature, replaces
+        // the app, and relaunches it. Only ErstApp links it.
+        .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0"),
+    ],
     targets: [
         .target(
             name: "ErstCoreFFI",
@@ -37,7 +42,12 @@ let package = Package(
         .target(name: "ErstKit", dependencies: ["ErstModel", "ErstCore"]),
         .executableTarget(
             name: "ErstApp",
-            dependencies: ["ErstModel", "ErstUI", "ErstKit", "ErstCore"]
+            dependencies: [
+                "ErstModel", "ErstUI", "ErstKit", "ErstCore",
+                .product(name: "Sparkle", package: "Sparkle"),
+            ],
+            // scripts/build-app.sh puts Sparkle.framework in Contents/Frameworks.
+            linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
         ),
         .target(name: "ErstPreview", dependencies: ["ErstModel"]),
         // Development tool: renders every screen with preview data to PNG files for review.

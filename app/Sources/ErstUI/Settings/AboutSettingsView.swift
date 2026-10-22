@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Version, description, and copyright.
+/// Version, updates, description, and copyright.
 public struct AboutSettingsView: View {
     let model: SettingsModel
+    let updates: SoftwareUpdateModel
 
     public var body: some View {
         Form {
@@ -20,6 +21,7 @@ public struct AboutSettingsView: View {
                 }
                 .padding(.vertical, Spacing.small)
             }
+            UpdatesSection(updates: updates)
             Section {
                 Text(
                     "A local memory of your screen."

@@ -16,6 +16,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var environment: AppEnvironment?
     private(set) var recorderStatus: RecorderStatus = .stopped
     private(set) var overlays: OverlayController?
+    /// What Settings and the menu bar show about updates; the update controller drives it.
+    let updates = SoftwareUpdateModel()
+    /// Opens Settings. SwiftUI only hands this out to a view, so the menu bar icon passes it in.
+    @ObservationIgnored var openSettingsAction: (() -> Void)?
+    @ObservationIgnored private var updateController: UpdateController?
     @ObservationIgnored private var onboarding: OnboardingController?
     @ObservationIgnored private var hotKeys: HotKeyCenter?
     @ObservationIgnored private var retention: RetentionJob?
@@ -24,6 +29,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @ObservationIgnored private var statusTask: Task<Void, Never>?
     @ObservationIgnored private var permissionTask: Task<Void, Never>?
     @ObservationIgnored private var terminating = false
+    @ObservationIgnored private var repliedToTermination = false
+    /// How long a quit waits for the recorder to finish its open segment.
+    private nonisolated static let shutdownDeadline: Duration = .seconds(10)
     @ObservationIgnored private var startupFailure: String?
     /// SIGTERM (kill, launchd, updaters) skips AppKit's quit path, so without this source the
     /// open video segment would never be finished.
@@ -34,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quitOnTerminationSignal()
         Typography.registerFonts()
         Task(priority: .utility) { await TextRecognizer.warmUp() }
+        startUpdates()
         startupTask = Task { await start() }
     }
 
@@ -58,7 +67,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func quitOnTerminationSignal() {
         signal(SIGTERM, SIG_IGN)
         let source = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
-        source.setEventHandler { NSApp.terminate(nil) }
+        source.setEventHandler {
+            appLog.notice("SIGTERM received; quitting through AppKit")
+            NSApp.terminate(nil)
+        }
         source.resume()
         terminationSignal = source
     }
@@ -66,20 +78,68 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard !terminating else { return .terminateLater }
         terminating = true
+        appLog.notice("Quitting: stopping the recorder")
         hotKeys?.unregisterAll()
         overlays?.dismiss(restoringFocus: false, animated: false)
         statusTask?.cancel()
         permissionTask?.cancel()
         startupTask?.cancel()
-        Task {
-            await startupTask?.value
-            await retention?.stop()
-            await reminders?.stop()
-            await environment?.service.shutdown()
+        retention?.cancel()
+        reminders?.cancel()
+        // While AppKit waits for the reply it runs the main run loop in its modal panel mode, where
+        // main actor tasks do not run. So the recorder stops off the main actor, and the reply is
+        // delivered in that mode.
+        let service = environment?.service
+        Task.detached { [self] in
+            await service?.shutdown()
             appLog.notice("Recorder stopped and open segment finished; quitting")
-            sender.reply(toApplicationShouldTerminate: true)
+            deliverTerminationReply(sender, completed: true)
+        }
+        // A stuck step must never keep Erst open: the updater waits for it to quit, and a segment
+        // left open is recovered at the next launch.
+        Task.detached { [self] in
+            try? await Task.sleep(for: Self.shutdownDeadline)
+            deliverTerminationReply(sender, completed: false)
         }
         return .terminateLater
+    }
+
+    private nonisolated func deliverTerminationReply(_ sender: NSApplication, completed: Bool) {
+        let modes =
+            [CFRunLoopMode.commonModes.rawValue, RunLoop.Mode.modalPanel.rawValue as CFString] as CFArray
+        let main = CFRunLoopGetMain()
+        CFRunLoopPerformBlock(main, modes) {
+            MainActor.assumeIsolated { self.finishTermination(sender, completed: completed) }
+        }
+        CFRunLoopWakeUp(main)
+    }
+
+    private func finishTermination(_ sender: NSApplication, completed: Bool) {
+        guard !repliedToTermination else { return }
+        repliedToTermination = true
+        if !completed {
+            appLog.error("Shutdown did not finish within the deadline; quitting anyway")
+        }
+        sender.reply(toApplicationShouldTerminate: true)
+    }
+
+    /// Opens Settings on About, where the update waits.
+    func revealUpdate() {
+        NSApp.unhide(nil)
+        NSApp.activate()
+        updates.revealRequested = true
+        guard let openSettingsAction else {
+            appLog.error("Settings could not open for the update: no settings action yet")
+            return
+        }
+        openSettingsAction()
+    }
+
+    private func startUpdates() {
+        let controller = UpdateController(model: updates)
+        controller.revealInSettings = { [weak self] in self?.revealUpdate() }
+        controller.start()
+        updateController = controller
     }
 
     func fixPermission() {
@@ -214,6 +274,10 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
     ) async {
         let identifier = response.notification.request.identifier
+        if identifier.hasPrefix(UpdateController.notificationPrefix) {
+            await revealUpdate()
+            return
+        }
         guard response.actionIdentifier == UNNotificationDefaultActionIdentifier,
             let id = Int64(identifier.split(separator: ".").last ?? ""), id > 0
         else { return }

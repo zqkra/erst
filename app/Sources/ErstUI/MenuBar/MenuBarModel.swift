@@ -62,8 +62,8 @@ public final class MenuBarModel: ObservableObject {
     }
 
     /// Down from nothing starts at the top and up starts at the bottom; both wrap, as menus do.
-    func moveHighlight(by step: Int) {
-        let all = MenuBarAction.rows(isPaused: isPaused)
+    func moveHighlight(by step: Int, update: String?) {
+        let all = MenuBarAction.rows(isPaused: isPaused, update: update)
         guard let current = highlighted, let index = all.firstIndex(of: current) else {
             highlighted = step > 0 ? all.first : all.last
             return

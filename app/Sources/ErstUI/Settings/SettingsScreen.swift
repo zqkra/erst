@@ -5,14 +5,17 @@ import SwiftUI
 public struct SettingsScreen: View {
     @StateObject private var model: SettingsModel
     @Environment(\.erstOpaquePanels) private var opaquePanels
+    private let updates: SoftwareUpdateModel
 
     /// `showingEraseConfirmation` opens the erase alert immediately, which snapshots use.
     public init(
         service: any MemoryService,
         agents: any AgentClientService,
+        updates: SoftwareUpdateModel = SoftwareUpdateModel(),
         initialSection: SettingsSection = .general,
         showingEraseConfirmation: Bool = false
     ) {
+        self.updates = updates
         _model = StateObject(
             wrappedValue: SettingsModel(
                 service: service,
@@ -51,6 +54,12 @@ public struct SettingsScreen: View {
         .onDisappear {
             Task { await model.flush() }
         }
+        // The menu bar and the update notification open Settings on the update.
+        .onChange(of: updates.revealRequested, initial: true) { _, requested in
+            guard requested else { return }
+            model.section = .about
+            updates.revealRequested = false
+        }
         .overlay {
             if opaquePanels && model.showEraseConfirmation {
                 SettingsEraseConfirmation(model: model)
@@ -86,7 +95,7 @@ public struct SettingsScreen: View {
         case .shortcuts:
             ShortcutsSettingsView(model: model)
         case .about:
-            AboutSettingsView(model: model)
+            AboutSettingsView(model: model, updates: updates)
         }
     }
 }

@@ -31,11 +31,16 @@ struct MenuBarIcon: View {
     }()
 
     let status: RecorderStatus
+    /// Receives SwiftUI's settings action. The icon is on screen from launch, so a notification
+    /// can open Settings before the menu was ever opened.
+    let onSettingsAction: (OpenSettingsAction) -> Void
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         Image(nsImage: Self.image)
             .opacity(isDimmed ? 0.5 : 1)
             .accessibilityLabel("Erst")
+            .task { onSettingsAction(openSettings) }
     }
 
     private var isDimmed: Bool {

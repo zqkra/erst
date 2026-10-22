@@ -37,6 +37,14 @@ struct AppMenu: View {
                     openSettings()
                 }
             },
+            updates: delegate.updates,
+            onUpdate: {
+                closeThen {
+                    NSApp.activate()
+                    delegate.updates.revealRequested = true
+                    openSettings()
+                }
+            },
             onFixPermission: { closeThen { delegate.fixPermission() } },
             onQuit: { closeThen { NSApp.terminate(nil) } }
         )

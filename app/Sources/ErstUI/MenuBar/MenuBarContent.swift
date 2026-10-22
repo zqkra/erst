@@ -11,6 +11,8 @@ public struct MenuBarContent: View {
     private let onPause: () -> Void
     private let onResume: () -> Void
     private let onOpenSettings: () -> Void
+    private let updates: SoftwareUpdateModel?
+    private let onUpdate: () -> Void
     private let onFixPermission: () -> Void
     private let onQuit: () -> Void
 
@@ -22,6 +24,8 @@ public struct MenuBarContent: View {
         onPause: @escaping () -> Void = {},
         onResume: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void = {},
+        updates: SoftwareUpdateModel? = nil,
+        onUpdate: @escaping () -> Void = {},
         onFixPermission: @escaping () -> Void = {},
         onQuit: @escaping () -> Void = {}
     ) {
@@ -32,6 +36,8 @@ public struct MenuBarContent: View {
         self.onPause = onPause
         self.onResume = onResume
         self.onOpenSettings = onOpenSettings
+        self.updates = updates
+        self.onUpdate = onUpdate
         self.onFixPermission = onFixPermission
         self.onQuit = onQuit
     }
@@ -47,7 +53,7 @@ public struct MenuBarContent: View {
             separator
             rows(MenuBarAction.commands(isPaused: model.isPaused))
             separator
-            rows(MenuBarAction.application)
+            rows(MenuBarAction.application(update: updates?.menuTitle))
         }
         .padding(.bottom, MenuBarLayout.rowInset)
         .frame(width: MenuBarLayout.width)
@@ -55,11 +61,11 @@ public struct MenuBarContent: View {
         .focusEffectDisabled()
         .focused($isFocused)
         .onKeyPress(.downArrow) {
-            model.moveHighlight(by: 1)
+            model.moveHighlight(by: 1, update: updates?.menuTitle)
             return .handled
         }
         .onKeyPress(.upArrow) {
-            model.moveHighlight(by: -1)
+            model.moveHighlight(by: -1, update: updates?.menuTitle)
             return .handled
         }
         .onKeyPress(.return) {
@@ -120,6 +126,7 @@ public struct MenuBarContent: View {
         case .activity: onOpenActivity()
         case .pause: onPause()
         case .resume: onResume()
+        case .update: onUpdate()
         case .settings: onOpenSettings()
         case .quit: onQuit()
         }

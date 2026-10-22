@@ -100,6 +100,23 @@ assemble_bundle() {
     printf '==> Copying the agent skill\n'
     mkdir -p "$contents/Resources/skill"
     cp -R "$ERST_ROOT/app/Support/skill/erst" "$contents/Resources/skill/"
+
+    install_sparkle "$1"
+}
+
+install_sparkle() {
+    local contents="$1/Contents" framework
+    framework="$contents/Frameworks/Sparkle.framework"
+    printf '==> Embedding Sparkle\n'
+    mkdir -p "$contents/Frameworks"
+    ditto "$bin_dir/Sparkle.framework" "$framework"
+    # Erst is not sandboxed, so Sparkle installs without its XPC services.
+    rm -rf "$framework/Versions/B/XPCServices" "$framework/XPCServices"
+    # SwiftPM also records its own build folder as a search path; the app looks only in Frameworks.
+    local rpath
+    while read -r rpath; do
+        install_name_tool -delete_rpath "$rpath" "$contents/MacOS/Erst"
+    done < <(otool -l "$contents/MacOS/Erst" | awk '$1 == "path" && $2 ~ /^\// && $2 != "/usr/lib/swift" { print $2 }')
 }
 
 sign_bundle() {
@@ -133,12 +150,17 @@ sign_bundle() {
     fi
     sign_args+=(--sign "$identity")
 
+    # Sparkle's helpers first, from the inside out, never with --deep.
+    local sparkle="$app_bundle/Contents/Frameworks/Sparkle.framework"
+    codesign "${sign_args[@]}" "$sparkle/Versions/B/Autoupdate"
+    codesign "${sign_args[@]}" "$sparkle/Versions/B/Updater.app"
+    codesign "${sign_args[@]}" "$sparkle"
     codesign "${sign_args[@]}" "$app_bundle/Contents/Helpers/erst"
-    # No App Sandbox in 0.1: Accessibility reads other apps' window titles,
+    # No App Sandbox: Accessibility reads other apps' window titles,
     # and agent configuration files are written in the user's home folder.
     codesign "${sign_args[@]}" --entitlements "$ERST_ROOT/app/Support/Erst.entitlements" "$app_bundle"
     codesign --verify --strict "$app_bundle/Contents/Helpers/erst"
-    codesign --verify --strict "$app_bundle"
+    codesign --verify --deep --strict "$app_bundle"
 }
 
 main() {

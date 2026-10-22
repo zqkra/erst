@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="../../releases/latest"><b>Download for macOS</b></a>
+  <a href="https://github.com/zqkra/erst/releases/latest/download/Erst.dmg"><b>Download for macOS</b></a>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="#build-from-source">Build from source</a>
   &nbsp;&nbsp;&nbsp;&nbsp;
@@ -100,6 +100,7 @@ Add `--json` to any command for structured output. Settings, Agents, Terminal li
 ### Your history stays on your Mac
 
 - Erst has no account and no server. Your history lives in `~/Library/Application Support/Erst`.
+- The only thing Erst asks the internet is whether a new version exists: once a day it reads the release feed on GitHub. Turn that off in Settings, About.
 - Password fields are never recorded. Apps you list in Settings, Privacy are never recorded, and 1Password is on that list from the start.
 - Pause from the menu bar, or erase the last hour from Settings, Privacy. Erasing removes the frames, the text, and every video segment that overlaps the hour, with secure delete.
 - Settings, Storage sets how long full-quality video stays, when the lighter copy takes over, and what remains after that.
@@ -149,7 +150,7 @@ The core is Rust and the app is Swift:
 3. Allow Screen Recording, so Erst can see the screen, and Accessibility, so it can read window titles and page addresses.
 4. Press <kbd>⌥</kbd> <kbd>Space</kbd>.
 
-Erst needs macOS 26 or later on Apple silicon.
+Erst needs macOS 26 or later on Apple silicon. It updates itself: when a new version is out, the menu bar offers it, and Settings, About shows what changed and installs it with one click. Every update is checked against Erst's signature before it installs.
 
 ## Build from source
 

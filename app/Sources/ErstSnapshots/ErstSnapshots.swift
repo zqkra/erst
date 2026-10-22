@@ -155,6 +155,7 @@ struct ErstSnapshots {
             ),
             name: "settings-erase-confirmation", width: 1000, height: 700
         )
+        try await UpdateSnapshots.capture(runner: runner, service: service, agents: agents, now: now)
         print("Snapshots written to \(folder.path)")
         exit(0)
     }

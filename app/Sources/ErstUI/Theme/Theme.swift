@@ -108,6 +108,8 @@ public enum MenuBarLayout {
     public static let sectionTitleHeight: CGFloat = 24
     public static let separatorGap: CGFloat = 6
     public static let appIconSize: CGFloat = 16
+    /// The butter dot at the end of the update row.
+    public static let updateDotSide: CGFloat = 7
 }
 
 /// The tint and lift every floating glass surface shares.

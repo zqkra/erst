@@ -30,8 +30,8 @@ final class RetentionJob {
         }
     }
 
-    func stop() async {
+    /// Stops the loop without waiting for it, for quitting.
+    func cancel() {
         task.cancel()
-        await task.value
     }
 }

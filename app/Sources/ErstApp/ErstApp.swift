@@ -13,7 +13,9 @@ struct ErstApp: App {
                 AppMenu(environment: environment, delegate: delegate)
             }
         } label: {
-            MenuBarIcon(status: delegate.recorderStatus)
+            MenuBarIcon(status: delegate.recorderStatus) { openSettings in
+                delegate.openSettingsAction = { openSettings() }
+            }
         }
         .menuBarExtraStyle(.window)
 
@@ -31,9 +33,11 @@ struct ErstApp: App {
 
         Settings {
             if let environment = delegate.environment {
-                SettingsScreen(service: environment.service, agents: environment.agents)
-                    .darkWindowAppearance()
-                    .placesWindowOnActiveSpace()
+                SettingsScreen(
+                    service: environment.service, agents: environment.agents, updates: delegate.updates
+                )
+                .darkWindowAppearance()
+                .placesWindowOnActiveSpace()
             }
         }
         .defaultSize(width: 900, height: 600)

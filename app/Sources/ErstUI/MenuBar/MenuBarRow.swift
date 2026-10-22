@@ -7,6 +7,8 @@ enum MenuBarAction: Hashable {
     case activity
     case pause
     case resume
+    /// Shown only while there is an update to act on, with the updater's own title.
+    case update(String)
     case settings
     case quit
 
@@ -16,12 +18,15 @@ enum MenuBarAction: Hashable {
         [.openTimeline, .search, .activity, isPaused ? .resume : .pause]
     }
 
-    /// Settings and Quit close every macOS menu, under their own separator.
-    static let application: [MenuBarAction] = [.settings, .quit]
+    /// Settings and Quit close every macOS menu, under their own separator. An update waits
+    /// just above them.
+    static func application(update: String?) -> [MenuBarAction] {
+        (update.map { [.update($0)] } ?? []) + [.settings, .quit]
+    }
 
     /// Every row in menu order, for the arrow keys.
-    static func rows(isPaused: Bool) -> [MenuBarAction] {
-        commands(isPaused: isPaused) + application
+    static func rows(isPaused: Bool, update: String?) -> [MenuBarAction] {
+        commands(isPaused: isPaused) + application(update: update)
     }
 
     /// Menu items take title capitalization, as in every macOS menu.
@@ -32,6 +37,7 @@ enum MenuBarAction: Hashable {
         case .activity: "Activity"
         case .pause: "Pause for an Hour"
         case .resume: "Resume Recording"
+        case .update(let title): title
         case .settings: "Settings\u{2026}"
         case .quit: "Quit Erst"
         }
@@ -43,7 +49,7 @@ enum MenuBarAction: Hashable {
         switch self {
         case .openTimeline: "\u{2325}Space"
         case .search: "\u{2325}\u{21E7}Space"
-        case .activity, .pause, .resume: nil
+        case .activity, .pause, .resume, .update: nil
         case .settings: "\u{2318},"
         case .quit: "\u{2318}Q"
         }
@@ -53,7 +59,7 @@ enum MenuBarAction: Hashable {
         switch self {
         case .settings: KeyboardShortcut(",", modifiers: .command)
         case .quit: KeyboardShortcut("q", modifiers: .command)
-        case .openTimeline, .search, .activity, .pause, .resume: nil
+        case .openTimeline, .search, .activity, .pause, .resume, .update: nil
         }
     }
 }
@@ -76,6 +82,11 @@ struct MenuBarRow: View {
                     Text(shortcut)
                         .erstStyle(Typography.body)
                         .foregroundStyle(Color.erstSecondary)
+                }
+                if case .update = action {
+                    Circle()
+                        .fill(Color.erstButter)
+                        .frame(width: MenuBarLayout.updateDotSide, height: MenuBarLayout.updateDotSide)
                 }
             }
         }

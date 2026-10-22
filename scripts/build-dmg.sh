@@ -49,7 +49,12 @@ rm -f "$dmg"
 # awk reads to the end, so codesign never writes into a closed pipe under pipefail.
 identity="$(codesign -dvv "$app" 2>&1 | awk -F= '/^Authority=/ && !found { print $2; found = 1 }')"
 if [[ -n "$identity" ]]; then
-    codesign --force --sign "$identity" "$dmg"
+    sign_args=(--force --sign "$identity")
+    # Notarization needs a secure timestamp on a Developer ID signature.
+    if [[ "$identity" == Developer\ ID\ Application:* ]]; then
+        sign_args+=(--timestamp)
+    fi
+    codesign "${sign_args[@]}" "$dmg"
     printf '==> Signed the disk image as %s\n' "$identity"
 fi
 printf '==> %s\n' "$dmg"

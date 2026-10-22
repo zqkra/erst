@@ -1,0 +1,23 @@
+# Rust
+/target/
+
+# Swift
+/app/.build/
+/app/.swiftpm/
+*.xcodeproj/
+xcuserdata/
+
+# Build products
+/dist/
+
+# macOS
+.DS_Store
+
+# Local data produced by development runs
+.erst-dev/
+
+# Python
+__pycache__/
+
+# The launch film project lives outside the app repository
+/marketing/

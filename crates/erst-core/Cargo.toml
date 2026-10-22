@@ -1,0 +1,10 @@
+[package]
+name = "erst-core"
+description = "Pure algorithms for Erst: frame change detection, retention, activity, heat, query parsing."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true

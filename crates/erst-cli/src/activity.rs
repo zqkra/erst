@@ -3,13 +3,14 @@
 use std::collections::BTreeMap;
 use std::io::Write;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use erst_core::activity::{self, ActivitySummary, Category};
 use erst_core::time::TimeRange;
 use erst_store::{SpanRow, Store};
 
 use crate::cli::ActivityArgs;
 use crate::format;
+use crate::window;
 
 mod json;
 
@@ -80,7 +81,11 @@ impl ActivityReport {
 
 /// Runs activity for one day and writes the requested format.
 pub fn run(store: &Store, args: &ActivityArgs, now_ms: i64, out: &mut impl Write) -> Result<()> {
-    let report = report(store, args.day.as_deref(), now_ms)?;
+    let history = window::history_window(store)?;
+    let report = report(store, args.day.as_deref(), history, now_ms)?;
+    if let Some(note) = history.note() {
+        eprintln!("{note}");
+    }
     if args.json {
         json::write(&report, out)
     } else {
@@ -89,14 +94,25 @@ pub fn run(store: &Store, args: &ActivityArgs, now_ms: i64, out: &mut impl Write
     }
 }
 
-/// Builds the report for `day`, defaulting to today.
-pub fn report(store: &Store, day: Option<&str>, now_ms: i64) -> Result<ActivityReport> {
+/// Builds the report for `day`, defaulting to today, inside the agent history window.
+pub fn report(
+    store: &Store,
+    day: Option<&str>,
+    history: window::HistoryWindow,
+    now_ms: i64,
+) -> Result<ActivityReport> {
     let day = match day {
         Some(day) => day.to_owned(),
         None => format::local_date(now_ms).context("could not read the local date")?,
     };
     let range = erst_core::time::local_day_of_text(&day, format::utc_offset_ms)
         .with_context(|| format!("invalid day {day:?}; expected YYYY-MM-DD"))?;
+    let Some(range) = history.clip(range, now_ms) else {
+        bail!(
+            "activity for {day} is older than the agent history window ({} days); widen it in Erst, Settings, Agents",
+            history.days.unwrap_or(0)
+        );
+    };
     ActivityReport::load(store, &day, range, now_ms)
 }
 

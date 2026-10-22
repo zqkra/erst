@@ -1,14 +1,15 @@
 //! Tool implementations: every tool answers with text and never touches images.
 
 use erst_core::query;
-use erst_core::time::{TimeRange, local_day_of_text};
+use erst_core::time::local_day_of_text;
 use erst_store::{SearchParams, Store, StoreError};
 use serde_json::Value;
 
 use super::protocol::{RpcError, ToolResult};
-use super::{render, window};
+use super::render;
 use crate::activity::ActivityReport;
 use crate::format;
+use crate::window;
 
 /// Smallest `limit` a search accepts.
 pub const MIN_SEARCH_LIMIT: u32 = 1;
@@ -71,15 +72,10 @@ fn search(store: &Store, args: &Value, now_ms: i64) -> ToolResult {
             "search_screen_history needs words to search for; app: and date tokens only narrow a text query.",
         );
     };
-    let cutoff_ms = history.cutoff_ms(now_ms);
-    let since_ms = match (parsed.since_ms, cutoff_ms) {
-        (Some(since), Some(cutoff)) => Some(since.max(cutoff)),
-        (since, cutoff) => since.or(cutoff),
-    };
     let params = SearchParams {
         fts_match,
         app: parsed.app,
-        since_ms,
+        since_ms: history.clamp_since(parsed.since_ms, now_ms),
         until_ms: parsed.until_ms,
         limit,
     };
@@ -116,9 +112,7 @@ fn moment(store: &Store, args: &Value, now_ms: i64) -> ToolResult {
             return ToolResult::error(format!("Could not read moment {frame_id}: {error}"));
         }
     };
-    if let Some(cutoff_ms) = history.cutoff_ms(now_ms)
-        && detail.stamp.captured_at < cutoff_ms
-    {
+    if !history.allows(detail.stamp.captured_at, now_ms) {
         return ToolResult::error(format!(
             "Moment {frame_id} is older than the agent history window ({} days).",
             history.days.unwrap_or(0)
@@ -143,18 +137,11 @@ fn activity(store: &Store, args: &Value, now_ms: i64) -> ToolResult {
         Ok(history) => history,
         Err(error) => return error,
     };
-    let cutoff_ms = history.cutoff_ms(now_ms);
-    if let Some(cutoff_ms) = cutoff_ms
-        && range.end_ms <= cutoff_ms
-    {
+    let Some(clipped) = history.clip(range, now_ms) else {
         return ToolResult::error(format!(
             "Activity for {day} is older than the agent history window ({} days).",
             history.days.unwrap_or(0)
         ));
-    }
-    let clipped = TimeRange {
-        start_ms: cutoff_ms.map_or(range.start_ms, |cutoff_ms| range.start_ms.max(cutoff_ms)),
-        end_ms: range.end_ms,
     };
     let report = match ActivityReport::load(store, &day, clipped, now_ms) {
         Ok(report) => report,

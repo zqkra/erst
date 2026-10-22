@@ -1,5 +1,8 @@
 //! The user's agent history window, read from the app settings document.
 //!
+//! The MCP tools and the `erst` commands both apply it, because an agent can
+//! read through either.
+//!
 //! The window fails closed. A missing document, a missing field, or an
 //! explicit null means no window. A document that cannot be read blocks agent
 //! reads, because an agent must never see more history than the app shows.
@@ -8,7 +11,7 @@ use std::collections::BTreeMap;
 
 use anyhow::{Context, Result, anyhow};
 use erst_core::settings::SETTINGS_KEY;
-use erst_core::time::MS_PER_DAY;
+use erst_core::time::{MS_PER_DAY, TimeRange};
 use erst_store::Store;
 use serde_json::Value;
 
@@ -32,6 +35,41 @@ impl HistoryWindow {
     pub fn cutoff_ms(self, now_ms: i64) -> Option<i64> {
         self.days
             .map(|days| now_ms.saturating_sub(i64::from(days).saturating_mul(MS_PER_DAY)))
+    }
+
+    /// The later of `since_ms` and the cutoff, so a query never reaches past the window.
+    pub fn clamp_since(self, since_ms: Option<i64>, now_ms: i64) -> Option<i64> {
+        match (since_ms, self.cutoff_ms(now_ms)) {
+            (Some(since), Some(cutoff)) => Some(since.max(cutoff)),
+            (since, cutoff) => since.or(cutoff),
+        }
+    }
+
+    /// The part of `range` inside the window, or `None` when all of it is older.
+    pub fn clip(self, range: TimeRange, now_ms: i64) -> Option<TimeRange> {
+        match self.cutoff_ms(now_ms) {
+            Some(cutoff) if range.end_ms <= cutoff => None,
+            Some(cutoff) => Some(TimeRange {
+                start_ms: range.start_ms.max(cutoff),
+                end_ms: range.end_ms,
+            }),
+            None => Some(range),
+        }
+    }
+
+    /// Whether a moment captured at `captured_at` is inside the window.
+    pub fn allows(self, captured_at: i64, now_ms: i64) -> bool {
+        self.cutoff_ms(now_ms)
+            .is_none_or(|cutoff| captured_at >= cutoff)
+    }
+
+    /// Why an `erst` command saw less than everything, for stderr. `None` without a limit.
+    pub fn note(self) -> Option<String> {
+        self.days.map(|days| {
+            format!(
+                "Limited to the last {days} days by the Erst agent history setting (Settings, Agents)."
+            )
+        })
     }
 }
 
@@ -87,7 +125,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use erst_core::settings::SETTINGS_KEY;
-    use erst_core::time::MS_PER_DAY;
+    use erst_core::time::{MS_PER_DAY, TimeRange};
 
     use super::{HISTORY_DAYS_FIELD, HistoryWindow, from_settings};
 
@@ -168,6 +206,50 @@ mod tests {
         for raw in ["[]", "null", "42", "\"text\""] {
             assert!(from_settings(&settings(raw)).is_err(), "{raw}");
         }
+    }
+
+    #[test]
+    fn since_is_clamped_to_the_window() {
+        let week = HistoryWindow { days: Some(7) };
+        let now = 10 * MS_PER_DAY;
+        assert_eq!(week.clamp_since(None, now), Some(3 * MS_PER_DAY));
+        assert_eq!(
+            week.clamp_since(Some(MS_PER_DAY), now),
+            Some(3 * MS_PER_DAY)
+        );
+        assert_eq!(
+            week.clamp_since(Some(5 * MS_PER_DAY), now),
+            Some(5 * MS_PER_DAY)
+        );
+        assert_eq!(HistoryWindow::UNLIMITED.clamp_since(Some(7), now), Some(7));
+        assert_eq!(HistoryWindow::UNLIMITED.clamp_since(None, now), None);
+    }
+
+    #[test]
+    fn ranges_and_moments_outside_the_window_are_refused() {
+        let week = HistoryWindow { days: Some(7) };
+        let now = 10 * MS_PER_DAY;
+        let old = TimeRange {
+            start_ms: 0,
+            end_ms: 2 * MS_PER_DAY,
+        };
+        let straddling = TimeRange {
+            start_ms: 2 * MS_PER_DAY,
+            end_ms: 4 * MS_PER_DAY,
+        };
+        assert_eq!(week.clip(old, now), None);
+        assert_eq!(
+            week.clip(straddling, now),
+            Some(TimeRange {
+                start_ms: 3 * MS_PER_DAY,
+                end_ms: 4 * MS_PER_DAY
+            })
+        );
+        assert!(!week.allows(2 * MS_PER_DAY, now));
+        assert!(week.allows(3 * MS_PER_DAY, now));
+        assert!(HistoryWindow::UNLIMITED.allows(0, now));
+        assert_eq!(HistoryWindow::UNLIMITED.note(), None);
+        assert!(week.note().unwrap().contains("last 7 days"));
     }
 
     #[test]

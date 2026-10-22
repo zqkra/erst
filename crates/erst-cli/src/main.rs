@@ -8,6 +8,7 @@ mod mcp;
 mod moment;
 mod search;
 mod stats;
+mod window;
 
 use std::io::{self, Write};
 use std::process::ExitCode;
@@ -31,7 +32,7 @@ fn run(cli: Cli) -> Result<()> {
     let now_ms = erst_core::now_ms();
     match cli.command {
         Command::Search(args) => with_stdout(|out| search::run(&store, &args, now_ms, out)),
-        Command::Moment(args) => with_stdout(|out| moment::run(&store, &args, out)),
+        Command::Moment(args) => with_stdout(|out| moment::run(&store, &args, now_ms, out)),
         Command::Stats(args) => with_stdout(|out| stats::run(&store, &args, now_ms, out)),
         Command::Activity(args) => with_stdout(|out| activity::run(&store, &args, now_ms, out)),
         Command::Mcp => mcp::serve(&store),

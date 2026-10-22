@@ -21,8 +21,8 @@ roughly when. It matches words, not meaning.
 
 ## Two ways in
 
-Prefer the MCP tools when they are listed, because they respect how far back the user lets agents
-look (Settings, Agents, How far back):
+Prefer the MCP tools when they are listed. They and the `erst` command read only as far back as
+the user lets agents look (Settings, Agents, How far back):
 
 - `search_screen_history` with `query` and an optional `limit`: the moments that match, each with
   its `frame_id`, local time, app, window title, web address, and the matched lines.

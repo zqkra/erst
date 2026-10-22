@@ -39,11 +39,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        if let other = runningCopy() {
+            appLog.notice(
+                "Erst is already running at \(other.bundleURL?.path ?? "another path", privacy: .public); quitting this copy"
+            )
+            other.activate()
+            NSApp.terminate(nil)
+            return
+        }
         quitOnTerminationSignal()
         Typography.registerFonts()
         Task(priority: .utility) { await TextRecognizer.warmUp() }
         startUpdates()
         startupTask = Task { await start() }
+    }
+
+    /// Another running Erst, such as one opened from the disk image while the installed one runs.
+    /// Two copies would record the screen twice into one history, so the newer one steps aside.
+    private func runningCopy() -> NSRunningApplication? {
+        guard let identifier = Bundle.main.bundleIdentifier else { return nil }
+        let current = ProcessInfo.processInfo.processIdentifier
+        return NSRunningApplication.runningApplications(withBundleIdentifier: identifier)
+            .first { $0.processIdentifier != current }
     }
 
     func applicationDidResignActive(_ notification: Notification) {

@@ -9,9 +9,11 @@ use serde::Serialize;
 use crate::cli::MomentArgs;
 use crate::format;
 use crate::mcp::render;
+use crate::window;
 
-/// Reads one moment and writes the requested format.
-pub fn run(store: &Store, args: &MomentArgs, out: &mut impl Write) -> Result<()> {
+/// Reads one moment inside the agent history window and writes the requested format.
+pub fn run(store: &Store, args: &MomentArgs, now_ms: i64, out: &mut impl Write) -> Result<()> {
+    let history = window::history_window(store)?;
     let detail = match store.frame_detail(args.frame_id) {
         Ok(detail) => detail,
         Err(StoreError::NotFound { .. }) => bail!(
@@ -22,6 +24,13 @@ pub fn run(store: &Store, args: &MomentArgs, out: &mut impl Write) -> Result<()>
             return Err(error).with_context(|| format!("could not read moment {}", args.frame_id));
         }
     };
+    if !history.allows(detail.stamp.captured_at, now_ms) {
+        bail!(
+            "moment {} is older than the agent history window ({} days); widen it in Erst, Settings, Agents",
+            args.frame_id,
+            history.days.unwrap_or(0)
+        );
+    }
     if args.json {
         write_json(&detail, out)
     } else {

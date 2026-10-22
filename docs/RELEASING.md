@@ -1,8 +1,22 @@
 # Releasing
 
-Every version of Erst ships the same way: a notarized `Erst.dmg` and an `appcast.xml` attached to a GitHub release. The download button in the README points at the latest `Erst.dmg`, and every installed copy reads the latest `appcast.xml` once a day, so publishing the release is what updates everyone.
+Every version of Erst ships the same way: an `Erst.dmg` and an `appcast.xml` attached to a GitHub release. The download button in the README points at the latest `Erst.dmg`, and every installed copy reads the latest `appcast.xml` once a day, so publishing the release is what updates everyone.
 
 Versions are plain numbers: 0.1.0, then 0.1.1, 0.1.2, and so on. There is no beta channel.
+
+## Until notarization arrives
+
+`scripts/release.sh --unnotarized notes.txt` publishes a release without Apple's notarization. It is signed with the `Erst Development` certificate, so macOS keeps Erst's permissions across updates, and the release page and the README tell people to click Open Anyway in System Settings, Privacy & Security, the first time. Sparkle checks every update against the EdDSA key, so updates install without that step.
+
+The script refuses an ad hoc signature: it changes with every build, and macOS would forget Screen Recording and Accessibility at each update. Back up the certificate, because every release must be signed with the same one:
+
+1. Open Keychain Access, choose the login keychain, then My Certificates.
+2. Control-click `Erst Development`, choose Export, save it as a `.p12` file, and give it a password.
+3. Keep the file and its password in a password manager, then delete the file.
+
+On another Mac, double-click the `.p12` to import it before you build. Do not run `scripts/dev-identity.sh` there: it would create a different certificate.
+
+When the Developer ID arrives, the first notarized release changes the certificate once, so macOS asks each user for Screen Recording and Accessibility again after that update. Updates keep working, because they are checked against the same EdDSA key.
 
 ## Once per Mac
 
@@ -55,4 +69,4 @@ Build the feed from a higher version than the copy you test with. Sparkle waits 
 
 ## The first public release
 
-The repository stays private until 0.1.0 is notarized. Publish 0.1.0 with the steps above, then make the repository public. The feed URL and the download link only resolve once the repository is public and has a release.
+Publish 0.1.0 with `scripts/release.sh --unnotarized notes.txt`, or without the flag once the Developer ID is set up, then make the repository public. The feed URL and the download link only resolve once the repository is public and has a release.

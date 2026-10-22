@@ -3,7 +3,6 @@
 mod protocol;
 pub(crate) mod render;
 mod tools;
-mod window;
 
 use std::io::{BufRead, Write};
 

@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Build, sign, notarize, and publish one release of Erst, with the feed the in-app updater reads.
 #
-#   scripts/release.sh NOTES_FILE            publish the version in Cargo.toml on GitHub Releases
-#   scripts/release.sh --local NOTES_FILE    build the archive and feed in dist/release, publish nothing
+#   scripts/release.sh NOTES_FILE                publish the version in Cargo.toml on GitHub Releases
+#   scripts/release.sh --unnotarized NOTES_FILE  publish without Apple's notarization, until it arrives
+#   scripts/release.sh --local NOTES_FILE        build the archive and feed in dist/release, publish nothing
 #
 # NOTES_FILE holds what changed, one sentence per line. Settings, About shows these lines.
-# A real release needs ERST_SIGN_IDENTITY (a Developer ID Application identity) and
-# ERST_NOTARY_PROFILE (a notarytool keychain profile). docs/RELEASING.md has the setup.
+# A notarized release needs ERST_SIGN_IDENTITY (a Developer ID Application identity) and
+# ERST_NOTARY_PROFILE (a notarytool keychain profile). An unnotarized release is signed with the
+# Erst Development certificate, never ad hoc, so permissions survive updates. docs/RELEASING.md
+# has the setup.
 set -euo pipefail
 # shellcheck source=scripts/env.sh
 # shellcheck disable=SC1091
@@ -15,6 +18,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 repository="zqkra/erst"
 sparkle_account="erst"
 release_dir="$ERST_ROOT/dist/release"
+gatekeeper_note="This build is not notarized by Apple yet; notarization is on its way. Drag Erst into \
+Applications and open it. macOS stops the first launch: open System Settings, Privacy & Security, and \
+click Open Anyway. Updates install without this step."
 
 fail() {
     printf 'error: %s\n' "$1" >&2
@@ -30,7 +36,7 @@ workspace_version() {
 }
 
 check_publishable() {
-    local version="$1"
+    local version="$1" notarized="$2"
     [[ -z "$(git -C "$ERST_ROOT" status --porcelain)" ]] || fail "commit or stash your changes first"
     [[ "$(git -C "$ERST_ROOT" branch --show-current)" == "main" ]] || fail "release from main"
     git -C "$ERST_ROOT" fetch --quiet origin main
@@ -39,9 +45,21 @@ check_publishable() {
     if gh release view "v$version" --repo "$repository" >/dev/null 2>&1; then
         fail "v$version is already released; raise the version in Cargo.toml"
     fi
-    [[ "${ERST_SIGN_IDENTITY:-}" == Developer\ ID\ Application:* ]] ||
-        fail "set ERST_SIGN_IDENTITY to your Developer ID Application identity"
-    [[ -n "${ERST_NOTARY_PROFILE:-}" ]] || fail "set ERST_NOTARY_PROFILE to your notarytool profile"
+    if [[ "$notarized" == true ]]; then
+        [[ "${ERST_SIGN_IDENTITY:-}" == Developer\ ID\ Application:* ]] ||
+            fail "set ERST_SIGN_IDENTITY to your Developer ID Application identity"
+        [[ -n "${ERST_NOTARY_PROFILE:-}" ]] || fail "set ERST_NOTARY_PROFILE to your notarytool profile"
+    fi
+}
+
+# An ad hoc signature changes with every build, so macOS would forget Erst's permissions at each
+# update. A release must carry a certificate.
+check_signed() {
+    local authority
+    authority="$(codesign -dvv "$ERST_ROOT/dist/Erst.app" 2>&1 | awk -F= '/^Authority=/ { print $2; exit }')"
+    [[ -n "$authority" ]] ||
+        fail "dist/Erst.app is signed ad hoc; import the Erst Development certificate (docs/RELEASING.md)"
+    printf '==> Signed by %s\n' "$authority"
 }
 
 notarize() {
@@ -81,36 +99,50 @@ write_appcast() {
 }
 
 main() {
-    local local_only=false notes_file version base_url
-    if [[ "${1:-}" == "--local" ]]; then
-        local_only=true
-        shift
-    fi
-    [[ $# == 1 ]] || fail "usage: scripts/release.sh [--local] NOTES_FILE"
+    local publish=true notarized=true notes_file version base_url
+    case "${1:-}" in
+        --local)
+            publish=false
+            notarized=false
+            shift
+            ;;
+        --unnotarized)
+            notarized=false
+            shift
+            ;;
+    esac
+    [[ $# == 1 ]] || fail "usage: scripts/release.sh [--local | --unnotarized] NOTES_FILE"
     notes_file="$1"
     [[ -s "$notes_file" ]] || fail "$notes_file is empty or missing"
     version="$(workspace_version)"
     [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "Cargo.toml has no plain version: $version"
 
-    if [[ "$local_only" == false ]]; then
-        check_publishable "$version"
+    if [[ "$publish" == true ]]; then
+        check_publishable "$version" "$notarized"
     fi
     (cd "$ERST_ROOT/app" && swift package resolve >/dev/null)
     "$ERST_ROOT/scripts/build-dmg.sh"
+    check_signed
 
     rm -rf "$release_dir"
     mkdir -p "$release_dir"
     cp "$ERST_ROOT/dist/Erst.dmg" "$release_dir/Erst.dmg"
-    if [[ "$local_only" == false ]]; then
+    if [[ "$notarized" == true ]]; then
         notarize "$release_dir/Erst.dmg"
     fi
     base_url="${ERST_RELEASE_BASE_URL:-https://github.com/$repository/releases/download/v$version}"
     write_appcast "$version" "$notes_file" "$release_dir/Erst.dmg" "$base_url"
+    # The release page carries the notes, and how to open a build Apple has not notarized.
+    cp "$notes_file" "$release_dir/release-notes.md"
+    if [[ "$notarized" == false ]]; then
+        printf '\n%s\n' "$gatekeeper_note" >>"$release_dir/release-notes.md"
+    fi
     printf '==> Feed and archive for %s in %s\n' "$version" "${release_dir#"$ERST_ROOT"/}"
 
-    if [[ "$local_only" == false ]]; then
+    if [[ "$publish" == true ]]; then
         gh release create "v$version" "$release_dir/Erst.dmg" "$release_dir/appcast.xml" \
-            --repo "$repository" --target main --title "Erst $version" --notes-file "$notes_file"
+            --repo "$repository" --target main --title "Erst $version" \
+            --notes-file "$release_dir/release-notes.md"
         printf '==> Published https://github.com/%s/releases/tag/v%s\n' "$repository" "$version"
     fi
 }

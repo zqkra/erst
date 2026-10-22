@@ -9,10 +9,15 @@ use serde::Serialize;
 
 use crate::cli::SearchArgs;
 use crate::format;
+use crate::window::{self, HistoryWindow};
 
-/// Runs a search and writes the requested format.
+/// Runs a search inside the agent history window and writes the requested format.
 pub fn run(store: &Store, args: &SearchArgs, now_ms: i64, out: &mut impl Write) -> Result<()> {
-    let hits = execute(store, args, now_ms)?;
+    let history = window::history_window(store)?;
+    let hits = execute(store, args, history, now_ms)?;
+    if let Some(note) = history.note() {
+        eprintln!("{note}");
+    }
     if args.json {
         write_json(&hits, out)
     } else {
@@ -20,8 +25,14 @@ pub fn run(store: &Store, args: &SearchArgs, now_ms: i64, out: &mut impl Write) 
     }
 }
 
-/// Parses the query with local day boundaries and runs it against the store.
-pub fn execute(store: &Store, args: &SearchArgs, now_ms: i64) -> Result<Vec<SearchHit>> {
+/// Parses the query with local day boundaries and runs it against the store, never reaching
+/// past `history`.
+pub fn execute(
+    store: &Store,
+    args: &SearchArgs,
+    history: HistoryWindow,
+    now_ms: i64,
+) -> Result<Vec<SearchHit>> {
     let input = args.query.join(" ");
     let parsed = query::parse(&input, now_ms, format::utc_offset_ms);
     let Some(fts_match) = parsed.fts_match() else {
@@ -30,7 +41,7 @@ pub fn execute(store: &Store, args: &SearchArgs, now_ms: i64) -> Result<Vec<Sear
     let params = SearchParams {
         fts_match,
         app: parsed.app,
-        since_ms: parsed.since_ms,
+        since_ms: history.clamp_since(parsed.since_ms, now_ms),
         until_ms: parsed.until_ms,
         limit: args.limit,
     };

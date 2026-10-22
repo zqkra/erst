@@ -8,7 +8,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
-use common::{APP_NAME, erst, fixture, fixture_with, json_stdout, stdout};
+use common::{APP_NAME, erst, fixture, fixture_with, stderr, stdout};
 use serde_json::{Value, json};
 
 struct McpClient {
@@ -221,12 +221,21 @@ fn mcp_honors_the_agent_history_window() {
     assert!(is_tool_error(&activity));
     assert!(text_of(&activity).contains("older than the agent history window"));
 
-    // The plain CLI is not limited by the agent window.
+    // The CLI honors the same window, because an agent can read through it too.
     let cli = erst(&fixture, &["search", "zebra", "--json"]);
-    assert!(cli.status.success());
-    let hits = json_stdout(&cli);
-    assert_eq!(hits.as_array().unwrap().len(), 3);
-    assert!(stdout(&cli).contains("zebra archive"));
+    assert!(cli.status.success(), "{}", stderr(&cli));
+    assert!(!stdout(&cli).contains("zebra archive"), "{}", stdout(&cli));
+    assert!(
+        stderr(&cli).contains("Limited to the last 2 days"),
+        "{}",
+        stderr(&cli)
+    );
+    let old_moment = erst(&fixture, &["moment", &old_frame_id.to_string()]);
+    assert!(!old_moment.status.success());
+    assert!(stderr(&old_moment).contains("older than the agent history window"));
+    let old_activity = erst(&fixture, &["activity", "--day", &old_day]);
+    assert!(!old_activity.status.success());
+    assert!(stderr(&old_activity).contains("older than the agent history window"));
 }
 
 #[test]

@@ -9,6 +9,10 @@ import SwiftUI
 struct ErstSnapshots {
     @MainActor
     static func main() async throws {
+        // Live captures draw on a 2x virtual display, made before AppKit first reads the screens.
+        if CommandLine.arguments.contains(where: { $0.hasPrefix("--live") }) {
+            await RetinaDisplay.prepare()
+        }
         _ = NSApplication.shared
         NSApp.setActivationPolicy(.accessory)
         NSApp.appearance = NSAppearance(named: .darkAqua)
@@ -20,6 +24,10 @@ struct ErstSnapshots {
         let arguments = CommandLine.arguments
         if let flag = arguments.firstIndex(of: "--installer-background"), flag + 1 < arguments.count {
             try InstallerBackground.write(to: URL(filePath: arguments[flag + 1], directoryHint: .isDirectory))
+            return
+        }
+        if CommandLine.arguments.contains("--live-day") {
+            try await LiveCapture.runDay(folder: try SnapshotPaths.createSnapshotsFolder(), now: sampleNow())
             return
         }
         if CommandLine.arguments.contains("--live") {

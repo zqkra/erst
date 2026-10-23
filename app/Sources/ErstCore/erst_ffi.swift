@@ -778,6 +778,29 @@ public protocol EngineProtocol: AnyObject, Sendable {
     func todaySummary(nowMs: Int64, timeZone: String, buckets: UInt32) throws  -> FfiTodaySummary
     
     /**
+     * Drops the frames of a finished segment at or after `written_until_ms`, the end of the
+     * video its file holds, and returns how many it dropped.
+     *
+     * The open segment is refused: its newest frames are still on their way into the file.
+     */
+    func dropUnwrittenFrames(segmentId: Int64, writtenUntilMs: Int64) throws  -> UInt64
+    
+    /**
+     * Every finished segment that still has a video, oldest first, for a one-time check of
+     * history recorded before interrupted runs were repaired at open.
+     */
+    func finishedSegmentVideos() throws  -> [FfiSegmentVideo]
+    
+    /**
+     * The segments this engine finished when it opened, because an earlier run crashed or was
+     * killed with them open, with absolute video paths.
+     *
+     * The app reads where each file's video ends and calls
+     * [`Engine::drop_unwritten_frames`] for the frames past it.
+     */
+    func recoveredSegments()  -> [FfiSegmentVideo]
+    
+    /**
      * Saves a reminder, anchored to a frame when one is given.
      */
     func addReminder(frameId: Int64?, dueAtMs: Int64, note: String) throws  -> Int64
@@ -1188,6 +1211,52 @@ open func todaySummary(nowMs: Int64, timeZone: String, buckets: UInt32)throws  -
         FfiConverterInt64.lower(nowMs),
         FfiConverterString.lower(timeZone),
         FfiConverterUInt32.lower(buckets),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Drops the frames of a finished segment at or after `written_until_ms`, the end of the
+     * video its file holds, and returns how many it dropped.
+     *
+     * The open segment is refused: its newest frames are still on their way into the file.
+     */
+open func dropUnwrittenFrames(segmentId: Int64, writtenUntilMs: Int64)throws  -> UInt64  {
+    return try  FfiConverterUInt64.lift(try rustCallWithError(FfiConverterTypeErstError_lift) {
+        uniffiCallStatus in
+    uniffi_erst_ffi_fn_method_engine_drop_unwritten_frames(
+            self.uniffiCloneHandle(),
+        FfiConverterInt64.lower(segmentId),
+        FfiConverterInt64.lower(writtenUntilMs),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * Every finished segment that still has a video, oldest first, for a one-time check of
+     * history recorded before interrupted runs were repaired at open.
+     */
+open func finishedSegmentVideos()throws  -> [FfiSegmentVideo]  {
+    return try  FfiConverterSequenceTypeFfiSegmentVideo.lift(try rustCallWithError(FfiConverterTypeErstError_lift) {
+        uniffiCallStatus in
+    uniffi_erst_ffi_fn_method_engine_finished_segment_videos(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+    /**
+     * The segments this engine finished when it opened, because an earlier run crashed or was
+     * killed with them open, with absolute video paths.
+     *
+     * The app reads where each file's video ends and calls
+     * [`Engine::drop_unwritten_frames`] for the frames past it.
+     */
+open func recoveredSegments() -> [FfiSegmentVideo]  {
+    return try!  FfiConverterSequenceTypeFfiSegmentVideo.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_erst_ffi_fn_method_engine_recovered_segments(
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
@@ -2844,6 +2913,63 @@ public func FfiConverterTypeFfiSearchHit_lift(_ buf: RustBuffer) throws -> FfiSe
 #endif
 public func FfiConverterTypeFfiSearchHit_lower(_ value: FfiSearchHit) -> RustBuffer {
     return FfiConverterTypeFfiSearchHit.lower(value)
+}
+
+
+/**
+ * A segment and the absolute path of its video.
+ */
+public struct FfiSegmentVideo: Equatable, Hashable {
+    public var segmentId: Int64
+    public var path: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(segmentId: Int64, path: String) {
+        self.segmentId = segmentId
+        self.path = path
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension FfiSegmentVideo: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFfiSegmentVideo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FfiSegmentVideo {
+        return
+            try FfiSegmentVideo(
+                segmentId: FfiConverterInt64.read(from: &buf), 
+                path: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FfiSegmentVideo, into buf: inout [UInt8]) {
+        FfiConverterInt64.write(value.segmentId, into: &buf)
+        FfiConverterString.write(value.path, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFfiSegmentVideo_lift(_ buf: RustBuffer) throws -> FfiSegmentVideo {
+    return try FfiConverterTypeFfiSegmentVideo.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFfiSegmentVideo_lower(_ value: FfiSegmentVideo) -> RustBuffer {
+    return FfiConverterTypeFfiSegmentVideo.lower(value)
 }
 
 
@@ -5155,6 +5281,31 @@ fileprivate struct FfiConverterSequenceTypeFfiSearchHit: FfiConverterRustBuffer 
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeFfiSegmentVideo: FfiConverterRustBuffer {
+    typealias SwiftType = [FfiSegmentVideo]
+
+    public static func write(_ value: [FfiSegmentVideo], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeFfiSegmentVideo.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [FfiSegmentVideo] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [FfiSegmentVideo]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeFfiSegmentVideo.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeFfiSiteTotal: FfiConverterRustBuffer {
     typealias SwiftType = [FfiSiteTotal]
 
@@ -5341,6 +5492,15 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_erst_ffi_checksum_method_engine_today_summary() != 49851) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_erst_ffi_checksum_method_engine_drop_unwritten_frames() != 29350) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_erst_ffi_checksum_method_engine_finished_segment_videos() != 7109) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_erst_ffi_checksum_method_engine_recovered_segments() != 9617) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_erst_ffi_checksum_method_engine_add_reminder() != 14663) {

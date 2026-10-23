@@ -21,7 +21,8 @@ extension Recorder {
         await ocrQueue.discardPending(capturedIn: range)
     }
 
-    /// Returns a kept frame cached within the last 60 seconds, at most 1280 pixels on its long side.
+    /// Returns a kept frame cached within the last 60 seconds, or one the open segment may not hold
+    /// yet, at most 1280 pixels on its long side.
     public func recentFrame(id: Int64) -> CGImage? {
         memory.recentFrame(id: id)
     }

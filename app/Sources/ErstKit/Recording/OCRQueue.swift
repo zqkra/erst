@@ -33,8 +33,16 @@ actor OCRQueue {
     /// retrying each kept frame turns one broken request into a compiler loop that takes the
     /// machine down with it. Pausing loses the text of a few frames, nothing more.
     private static let pauseAfterFailures = Duration.seconds(60)
+    /// A read takes well under a second once the models are warm, and a first read at the fast
+    /// level loads its model in seconds. One that has not finished by now is stuck inside Vision,
+    /// which has happened on macOS 27: the frame is stored without text instead of holding
+    /// every later frame back.
+    private static let recognitionDeadline = Duration.seconds(60)
+    /// How long to leave Vision alone after a read got stuck, before a new reader tries again.
+    private static let pauseAfterHang = Duration.seconds(300)
 
-    private let recognizer: TextRecognizer
+    /// Replaced when a read gets stuck: the stuck read keeps its reader busy for good.
+    private var recognizer: TextRecognizer
     private var active: Job?
     private var pending: Job?
     private var backlog: [Job] = []
@@ -199,6 +207,7 @@ actor OCRQueue {
         active = job
         let signature = TileSignature(job.frame.frame.pixelBuffer)
         let plan = readPlan(for: signature)
+        let recognizer = recognizer
         task = Task(priority: readPriority) { [weak self] in
             guard let self else { return }
             let start = ContinuousClock.now
@@ -206,8 +215,17 @@ actor OCRQueue {
             var succeeded = false
             do {
                 if plan?.regions.isEmpty != true {
-                    recognized = try await self.recognizer.recognizeText(
-                        in: job.frame.frame.pixelBuffer, regions: plan?.regions.map(\.read))
+                    let frame = job.frame
+                    let regions = plan?.regions.map(\.read)
+                    let lines = try await Deadline.run(within: Self.recognitionDeadline) {
+                        try await recognizer.recognizeText(in: frame.frame.pixelBuffer, regions: regions)
+                    }
+                    guard let lines else {
+                        await self.abandonStuckRecognizer()
+                        await self.complete(job, lines: [], reading: nil, elapsedMilliseconds: 0)
+                        return
+                    }
+                    recognized = lines
                 }
                 await self.noteRecognitionFinished(failed: false)
                 succeeded = true
@@ -236,6 +254,20 @@ actor OCRQueue {
             let changed = signature.changedTiles(since: baseline.signature)
         else { return nil }
         return ReadPlan.make(changed: changed, signature: signature, previousLines: baseline.lines)
+    }
+
+    /// Gives up on a read stuck inside Vision: a new reader takes over after a pause, and the
+    /// frames in between are stored without text.
+    private func abandonStuckRecognizer() {
+        recognizer = TextRecognizer()
+        baseline = nil
+        consecutiveFailures = 0
+        pausedUntil = ContinuousClock.now.advanced(by: Self.pauseAfterHang)
+        let seconds = Int(Self.recognitionDeadline.components.seconds)
+        let pause = Int(Self.pauseAfterHang.components.seconds)
+        ocrQueueLog.error(
+            "Text recognition did not finish in \(seconds, privacy: .public) s; pausing it for \(pause, privacy: .public) s"
+        )
     }
 
     /// Counts a run of failures and pauses recognition before it becomes a compiler loop.

@@ -27,6 +27,8 @@ public actor Recorder {
     var userPauseUntil: Date?
     var pipelineBusy = false
     var pipelineWaiters: [CheckedContinuation<Void, Never>] = []
+    /// What the frame in the pipeline is waiting on, for the log when a frame takes too long.
+    var pipelineStage = "idle"
 
     var excludedBundleIDs: Set<String>
     var status: RecorderState.Status = .stopped

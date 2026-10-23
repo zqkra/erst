@@ -2,6 +2,9 @@ import CoreGraphics
 import Foundation
 
 extension Recorder {
+    /// Far longer than any healthy frame, which takes well under a second.
+    static let stuckFrameDeadline = Duration.seconds(30)
+
     func startCaptureConsumer() {
         captureTask = Task { [weak self] in
             guard let self else { return }
@@ -14,7 +17,23 @@ extension Recorder {
     private func ingest(_ frame: CapturedFrame) async {
         await acquirePipeline()
         defer { releasePipeline() }
+        // Capture waits on each frame, so a frame stuck in a step means nothing more is recorded.
+        // The log names the step, so a stall is never silent again.
+        let watchdog = Task { [weak self] in
+            try? await Task.sleep(for: Self.stuckFrameDeadline)
+            guard !Task.isCancelled else { return }
+            await self?.reportStuckFrame()
+        }
+        defer { watchdog.cancel() }
         await process(frame)
+        pipelineStage = "idle"
+    }
+
+    private func reportStuckFrame() {
+        let seconds = Int(Self.stuckFrameDeadline.components.seconds)
+        recorderLog.error(
+            "A captured frame is still \(self.pipelineStage, privacy: .public) after \(seconds, privacy: .public) s; nothing new is recorded until it finishes"
+        )
     }
 
     private func process(_ frame: CapturedFrame) async {
@@ -55,6 +74,7 @@ extension Recorder {
         guard verdict.keep else { return }
 
         let result: AppendResult
+        pipelineStage = "writing video"
         do {
             result = try await segmentWriter.append(frame)
         } catch {
@@ -86,6 +106,7 @@ extension Recorder {
         )
         memory.markQueued(queued)
         enqueued = true
+        pipelineStage = "queueing text"
         let reading = Task(priority: .utility) { [accessibilityText] in
             await accessibilityText.read(focus, displayID: frame.displayID)
         }

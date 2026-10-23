@@ -72,3 +72,62 @@ fn a_segment_left_open_by_a_crash_is_finished_with_its_newest_frame_and_size() -
     assert_eq!(engine.storage()?.video_bytes, 4_096 + video_bytes);
     Ok(())
 }
+
+#[test]
+fn frames_a_crashed_file_never_got_are_dropped_on_request() -> TestResult {
+    let (_temp, data_dir, engine) = open_engine();
+    let started = current_time_ms() - MS_PER_HOUR;
+    let crashed = engine.begin_segment("segments/cut.mp4".into(), started, 1_920, 1_080)?;
+    for (pts, text) in [
+        (0, "written zebra"),
+        (2_000, "written yak"),
+        (4_000, "unwritten quokka"),
+    ] {
+        let mut kept = frame(crashed, started + pts, text);
+        kept.pts_ms = pts;
+        engine.record_frame(kept)?;
+    }
+    write_video(&data_dir, "segments/cut.mp4");
+    // The earlier run is killed with the newest frame still inside the video writer.
+    drop(engine);
+
+    let engine = Engine::open(data_dir.to_string_lossy().into_owned())?;
+    let recovered = engine.recovered_segments();
+    assert_eq!(recovered.len(), 1);
+    assert_eq!(recovered[0].segment_id, crashed);
+    let path = recovered[0].path.clone();
+    assert!(path.ends_with("segments/cut.mp4"), "{path}");
+    assert_eq!(
+        engine.finished_segment_videos()?.len(),
+        1,
+        "a finished segment with a video is listed for the one-time check"
+    );
+
+    // The file's video ends at 4000 ms, so the frame at 4000 never reached it.
+    assert_eq!(engine.drop_unwritten_frames(crashed, 4_000)?, 1);
+    let found = |query: &str| engine.search(query.into(), 10, "UTC".into());
+    assert!(
+        found("quokka")?.is_empty(),
+        "the unwritten frame and its text are gone"
+    );
+    assert_eq!(found("zebra")?.len(), 1, "written frames stay");
+    assert_eq!(found("yak")?.len(), 1, "written frames stay");
+
+    // The segment this run is writing is refused.
+    let live = engine.begin_segment("segments/live.mp4".into(), started + 10_000, 1_920, 1_080)?;
+    assert!(engine.drop_unwritten_frames(live, 0).is_err());
+    assert_eq!(
+        engine.finished_segment_videos()?.len(),
+        1,
+        "the open segment is not listed"
+    );
+    drop(engine);
+
+    let engine = Engine::open(data_dir.to_string_lossy().into_owned())?;
+    assert_eq!(
+        engine.recovered_segments().len(),
+        1,
+        "the live segment is recovered next time"
+    );
+    Ok(())
+}

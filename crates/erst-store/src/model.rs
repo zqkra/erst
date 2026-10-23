@@ -97,6 +97,14 @@ pub struct TrackFrameRow {
     pub url: Option<String>,
 }
 
+/// A segment an earlier run left open, finished when the store opened again.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoveredSegment {
+    pub id: i64,
+    /// Relative to the data directory; `None` once retention removed the video.
+    pub path: Option<String>,
+}
+
 /// What one erase removed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EraseOutcome {

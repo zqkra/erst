@@ -76,6 +76,10 @@ public actor SegmentWriter {
         return AppendResult(segment: current, ptsMilliseconds: pts, rotatedFrom: rotated)
     }
 
+    /// Closing a segment flushes a few seconds of frames. One that takes longer is stuck inside
+    /// the system, and recording must not wait for it.
+    private static let finishDeadline = Duration.seconds(20)
+
     /// Closes the open segment and returns it with its final file size.
     public func finish() async throws -> FinishedSegment? {
         await acquireOperation()
@@ -189,8 +193,14 @@ public actor SegmentWriter {
     private func closeCurrent(endedAt: Date) async -> FinishedSegment? {
         guard let writer, let current else { return nil }
         receiver?.finish()
-        await writer.finishWriting()
-        if writer.status == .failed {
+        let finished = await Deadline.wait(within: Self.finishDeadline) { done in
+            writer.finishWriting { done() }
+        }
+        if !finished {
+            // The file keeps every fragment already written; recording goes on in a new segment.
+            segmentWriterLog.error(
+                "Finishing \(current.relativePath, privacy: .public) did not complete in time; moving on")
+        } else if writer.status == .failed {
             let message =
                 "Finishing \(current.relativePath) failed: "
                 + "\(writer.error?.localizedDescription ?? "unknown")"

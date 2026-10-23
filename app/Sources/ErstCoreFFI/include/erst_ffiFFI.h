@@ -343,6 +343,21 @@ RustBuffer uniffi_erst_ffi_fn_method_engine_timeline(uint64_t ptr, int64_t start
 RustBuffer uniffi_erst_ffi_fn_method_engine_today_summary(uint64_t ptr, int64_t now_ms, RustBuffer time_zone, uint32_t buckets, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ERST_FFI_FN_METHOD_ENGINE_DROP_UNWRITTEN_FRAMES
+#define UNIFFI_FFIDEF_UNIFFI_ERST_FFI_FN_METHOD_ENGINE_DROP_UNWRITTEN_FRAMES
+uint64_t uniffi_erst_ffi_fn_method_engine_drop_unwritten_frames(uint64_t ptr, int64_t segment_id, int64_t written_until_ms, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ERST_FFI_FN_METHOD_ENGINE_FINISHED_SEGMENT_VIDEOS
+#define UNIFFI_FFIDEF_UNIFFI_ERST_FFI_FN_METHOD_ENGINE_FINISHED_SEGMENT_VIDEOS
+RustBuffer uniffi_erst_ffi_fn_method_engine_finished_segment_videos(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ERST_FFI_FN_METHOD_ENGINE_RECOVERED_SEGMENTS
+#define UNIFFI_FFIDEF_UNIFFI_ERST_FFI_FN_METHOD_ENGINE_RECOVERED_SEGMENTS
+RustBuffer uniffi_erst_ffi_fn_method_engine_recovered_segments(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ERST_FFI_FN_METHOD_ENGINE_ADD_REMINDER
 #define UNIFFI_FFIDEF_UNIFFI_ERST_FFI_FN_METHOD_ENGINE_ADD_REMINDER
 int64_t uniffi_erst_ffi_fn_method_engine_add_reminder(uint64_t ptr, RustBuffer frame_id, int64_t due_at_ms, RustBuffer note, RustCallStatus *_Nonnull out_status
@@ -742,6 +757,24 @@ uint16_t uniffi_erst_ffi_checksum_method_engine_timeline(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ERST_FFI_CHECKSUM_METHOD_ENGINE_TODAY_SUMMARY
 #define UNIFFI_FFIDEF_UNIFFI_ERST_FFI_CHECKSUM_METHOD_ENGINE_TODAY_SUMMARY
 uint16_t uniffi_erst_ffi_checksum_method_engine_today_summary(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ERST_FFI_CHECKSUM_METHOD_ENGINE_DROP_UNWRITTEN_FRAMES
+#define UNIFFI_FFIDEF_UNIFFI_ERST_FFI_CHECKSUM_METHOD_ENGINE_DROP_UNWRITTEN_FRAMES
+uint16_t uniffi_erst_ffi_checksum_method_engine_drop_unwritten_frames(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ERST_FFI_CHECKSUM_METHOD_ENGINE_FINISHED_SEGMENT_VIDEOS
+#define UNIFFI_FFIDEF_UNIFFI_ERST_FFI_CHECKSUM_METHOD_ENGINE_FINISHED_SEGMENT_VIDEOS
+uint16_t uniffi_erst_ffi_checksum_method_engine_finished_segment_videos(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ERST_FFI_CHECKSUM_METHOD_ENGINE_RECOVERED_SEGMENTS
+#define UNIFFI_FFIDEF_UNIFFI_ERST_FFI_CHECKSUM_METHOD_ENGINE_RECOVERED_SEGMENTS
+uint16_t uniffi_erst_ffi_checksum_method_engine_recovered_segments(void
     
 );
 #endif

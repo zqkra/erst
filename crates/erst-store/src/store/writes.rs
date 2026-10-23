@@ -3,7 +3,7 @@
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::error::StoreError;
-use crate::model::{LineSource, NewFrame, NewLine};
+use crate::model::{LineSource, NewFrame, NewLine, RecoveredSegment};
 use crate::normalize::normalize_text;
 use crate::store::lines::insert_frame_lines;
 use crate::store::{STAGE_SEGMENT_UNLINK, Store, u64_to_sql};
@@ -210,7 +210,7 @@ impl Store {
         })
     }
 
-    /// Finishes every segment an earlier run left open and returns how many it finished.
+    /// Finishes every segment an earlier run left open and returns them.
     ///
     /// Call it before this run begins a segment: then every open segment belongs to a run that
     /// crashed or was killed. Each one ends at its newest frame, or at its start when it has
@@ -219,7 +219,7 @@ impl Store {
     pub fn finish_unfinished_segments(
         &self,
         file_bytes: impl Fn(&str) -> u64,
-    ) -> Result<u64, StoreError> {
+    ) -> Result<Vec<RecoveredSegment>, StoreError> {
         self.with_writer(|connection| {
             let transaction = connection.transaction()?;
             let unfinished = {
@@ -242,7 +242,10 @@ impl Store {
                 }
             }
             transaction.commit()?;
-            Ok(u64::try_from(unfinished.len()).unwrap_or(u64::MAX))
+            Ok(unfinished
+                .into_iter()
+                .map(|(id, path, _)| RecoveredSegment { id, path })
+                .collect())
         })
     }
 

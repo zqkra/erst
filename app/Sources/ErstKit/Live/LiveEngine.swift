@@ -8,10 +8,15 @@ public actor LiveEngine {
 
     private init(engine: Engine) { self.engine = engine }
 
+    /// Opens the engine, then drops the frames an interrupted run kept out of its last video,
+    /// before anything can show them.
     public static func open(at directory: URL) async throws -> LiveEngine {
-        try await Task.detached(priority: .userInitiated) {
-            LiveEngine(engine: try Engine.open(dataDir: directory.path))
+        let engine = try await Task.detached(priority: .userInitiated) {
+            try Engine.open(dataDir: directory.path)
         }.value
+        await UnwrittenFrames.drop(from: engine)
+        Task.detached(priority: .background) { await UnwrittenFrames.checkHistoryOnce(engine) }
+        return LiveEngine(engine: engine)
     }
 
     func call<Value: Sendable>(_ body: @Sendable (Engine) throws -> Value) rethrows -> Value {

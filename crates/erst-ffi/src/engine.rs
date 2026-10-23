@@ -8,6 +8,7 @@
 mod capture;
 mod erase;
 mod queries;
+mod recovery;
 mod reminders;
 mod retention;
 mod settings;
@@ -19,7 +20,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use erst_core::{KeepPolicy, KeepState, Thumbnail, TimeRange};
-use erst_store::Store;
+use erst_store::{RecoveredSegment, Store};
 
 use crate::error::ErstError;
 
@@ -53,6 +54,8 @@ pub struct Engine {
     store: Store,
     keep_policy: KeepPolicy,
     keep_memory: Mutex<KeepMemory>,
+    /// The segments this open finished for a run that crashed or was killed.
+    recovered: Mutex<Vec<RecoveredSegment>>,
 }
 
 #[uniffi::export]
@@ -83,10 +86,15 @@ impl Engine {
             data_dir,
             keep_policy: KeepPolicy::default(),
             keep_memory: Mutex::new(KeepMemory::default()),
+            recovered: Mutex::new(Vec::new()),
         };
         engine.create_segments_dir()?;
         engine.store.close_open_spans()?;
-        engine.finish_unfinished_segments()?;
+        let recovered = engine.finish_unfinished_segments()?;
+        *engine
+            .recovered
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = recovered;
         engine.drain_pending_unlinks();
         Ok(Arc::new(engine))
     }
@@ -119,7 +127,7 @@ impl Engine {
     ///
     /// It runs before this run begins a segment, so every open segment is stale.
     /// A missing file counts as zero bytes.
-    fn finish_unfinished_segments(&self) -> Result<u64, ErstError> {
+    fn finish_unfinished_segments(&self) -> Result<Vec<RecoveredSegment>, ErstError> {
         let data_dir = &self.data_dir;
         Ok(self.store.finish_unfinished_segments(|relative_path| {
             fs::metadata(data_dir.join(relative_path)).map_or(0, |metadata| metadata.len())

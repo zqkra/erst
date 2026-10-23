@@ -11,6 +11,11 @@ import Foundation
 /// CPU, and comes back in 0.4 ms.
 struct RecentFrames {
     private static let lifetimeSeconds: TimeInterval = 60
+    /// A kept frame reaches the open segment's file only once a later frame and the next 10 second
+    /// fragment follow it. The frames this close to the newest one may not be in the file yet, so
+    /// they stay however old they are, until newer frames push them out. Then the timeline opens on
+    /// what was on screen even after minutes of a still screen.
+    private static let unwrittenSeconds: TimeInterval = 25
     private static let maximumCount = 30
     /// Video compresses little, so the cap still holds about eight full frames, more than the
     /// ten seconds a segment needs before its newest frames can be read from the file.
@@ -45,8 +50,10 @@ struct RecentFrames {
     }
 
     private mutating func prune() {
+        guard let newest = entries.last?.capturedAt else { return }
         let oldest = Date().addingTimeInterval(-Self.lifetimeSeconds)
-        entries.removeAll { $0.capturedAt < oldest }
+        let unwritten = newest.addingTimeInterval(-Self.unwrittenSeconds)
+        entries.removeAll { $0.capturedAt < oldest && $0.capturedAt < unwritten }
     }
 
     /// Scales one frame to preview size with vImage and compresses the pixels.

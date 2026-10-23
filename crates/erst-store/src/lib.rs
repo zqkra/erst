@@ -19,7 +19,8 @@ mod store;
 
 pub use error::StoreError;
 pub use model::{
-    EraseOutcome, FrameDetail, FrameStamp, LineBox, LineSource, NewFrame, NewLine, ReminderRow,
-    SearchHit, SearchParams, SearchPlan, SegmentRow, SpanRow, StorageStats, TrackFrameRow,
+    EraseOutcome, FrameDetail, FrameStamp, LineBox, LineSource, NewFrame, NewLine,
+    RecoveredSegment, ReminderRow, SearchHit, SearchParams, SearchPlan, SegmentRow, SpanRow,
+    StorageStats, TrackFrameRow,
 };
 pub use store::Store;

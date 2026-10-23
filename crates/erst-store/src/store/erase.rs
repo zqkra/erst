@@ -68,6 +68,11 @@ const STAGE_RANGE_FRAMES: &str = "
     WHERE segment_id IN (SELECT id FROM erased_segments)
        OR (captured_at >= ?1 AND captured_at < ?2)";
 
+/// The frames of one segment from its file's end on, which a crash kept out of the file.
+const STAGE_UNWRITTEN_FRAMES: &str = "
+    INSERT OR IGNORE INTO erased_frames (id)
+    SELECT id FROM frames WHERE segment_id = ?1 AND pts_ms >= ?2";
+
 const DELETE_STAGED_FRAMES: &str = "DELETE FROM frames WHERE id IN (SELECT id FROM erased_frames)";
 
 /// Only lines no remaining frame shows are dropped, so lines shared with frames
@@ -169,6 +174,29 @@ impl Store {
                 erased_to_ms,
                 purge_complete,
             })
+        })
+    }
+
+    /// Removes the frames of a segment at or after `written_until_ms`, the end of the video
+    /// its file holds, and the text lines they leave orphaned.
+    ///
+    /// A video writer keeps its newest frame until the next one arrives, so a run that crashed
+    /// or was killed leaves a frame or two in the database that its file never got. Shown in
+    /// the timeline they would be blank; the file stays as it is.
+    pub fn drop_unwritten_frames(
+        &self,
+        segment_id: i64,
+        written_until_ms: i64,
+    ) -> Result<u64, StoreError> {
+        self.with_writer(|connection| {
+            let transaction = connection.transaction()?;
+            transaction.execute_batch(RESET_STAGING)?;
+            transaction
+                .prepare_cached(STAGE_UNWRITTEN_FRAMES)?
+                .execute(params![segment_id, written_until_ms])?;
+            let removed = delete_staged_frames(&transaction)?;
+            transaction.commit()?;
+            Ok(removed)
         })
     }
 

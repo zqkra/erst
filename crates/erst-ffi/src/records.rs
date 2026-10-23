@@ -463,3 +463,10 @@ pub struct FfiSettings {
     /// How far back agents may read, `None` for all history.
     pub agent_history_days: Option<u32>,
 }
+
+/// A segment and the absolute path of its video.
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Record)]
+pub struct FfiSegmentVideo {
+    pub segment_id: i64,
+    pub path: String,
+}

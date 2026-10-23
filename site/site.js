@@ -77,7 +77,11 @@
     canvas.setAttribute('aria-hidden', 'true');
     still.after(canvas);
     const context = canvas.getContext('2d');
-    const url = (i) => track.dataset.sequence.replace('%', String(i).padStart(2, '0'));
+    // A screen with one pixel per point gets frames at half the size, a third of the download.
+    const pattern = window.devicePixelRatio > 1.25
+      ? track.dataset.sequence
+      : track.getAttribute('data-sequence-1x') || track.dataset.sequence;
+    const url = (i) => pattern.replace('%', String(i).padStart(2, '0'));
 
     // A blob per frame: undefined until asked for, null while it downloads, false if it failed.
     const blobs = new Array(count);

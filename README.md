@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/zqkra/erst/releases/latest/download/Erst.dmg"><b>Download for macOS</b></a>
+  <a href="https://erstapp.com/download"><b>Download for macOS</b></a>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="#build-from-source">Build from source</a>
   &nbsp;&nbsp;&nbsp;&nbsp;

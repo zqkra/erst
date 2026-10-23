@@ -2,6 +2,7 @@
 # Build, sign, notarize, and publish one release of Erst, with the feed the in-app updater reads.
 #
 #   scripts/release.sh NOTES_FILE                publish the version in Cargo.toml on GitHub Releases
+#                                                and on erstapp.com/download
 #   scripts/release.sh --unnotarized NOTES_FILE  publish without Apple's notarization (never public)
 #   scripts/release.sh --local NOTES_FILE        build the archive and feed in dist/release, publish nothing
 #
@@ -17,6 +18,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
 repository="zqkra/erst"
 sparkle_account="erst"
+# erstapp.com/download serves the Erst.dmg at the top of this Cloudflare R2 bucket.
+downloads_bucket="erst-releases"
 release_dir="$ERST_ROOT/dist/release"
 gatekeeper_note="This build is not notarized by Apple yet; notarization is on its way. Drag Erst into \
 Applications and open it. macOS stops the first launch: open System Settings, Privacy & Security, and \
@@ -42,6 +45,7 @@ check_publishable() {
     git -C "$ERST_ROOT" fetch --quiet origin main
     [[ "$(git -C "$ERST_ROOT" rev-parse HEAD)" == "$(git -C "$ERST_ROOT" rev-parse origin/main)" ]] ||
         fail "push main first, so the tag points at what you built"
+    command -v wrangler >/dev/null || fail "install Wrangler and run wrangler login (docs/RELEASING.md)"
     if gh release view "v$version" --repo "$repository" >/dev/null 2>&1; then
         fail "v$version is already released; raise the version in Cargo.toml"
     fi
@@ -145,6 +149,13 @@ main() {
             --repo "$repository" --target main --title "Erst $version" \
             --notes-file "$release_dir/release-notes.md"
         printf '==> Published https://github.com/%s/releases/tag/v%s\n' "$repository" "$version"
+        # Each version stays under its tag, and the copy at the top is what the website's download
+        # buttons serve, so they follow every release without a deploy.
+        wrangler r2 object put "$downloads_bucket/v$version/Erst.dmg" --file "$release_dir/Erst.dmg" \
+            --content-type application/x-apple-diskimage --remote
+        wrangler r2 object put "$downloads_bucket/Erst.dmg" --file "$release_dir/Erst.dmg" \
+            --content-type application/x-apple-diskimage --remote
+        printf '==> https://erstapp.com/download serves %s\n' "$version"
     fi
 }
 

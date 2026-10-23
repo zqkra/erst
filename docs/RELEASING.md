@@ -1,6 +1,6 @@
 # Releasing
 
-Every version of Erst ships the same way: an `Erst.dmg` and an `appcast.xml` attached to a GitHub release. The download button in the README points at the latest `Erst.dmg`, and every installed copy reads the latest `appcast.xml` once a day, so publishing the release is what updates everyone.
+Every version of Erst ships the same way: an `Erst.dmg` and an `appcast.xml` attached to a GitHub release, and the same `Erst.dmg` copied to the `erst-releases` bucket on Cloudflare R2. The download buttons on erstapp.com and in the README go to `https://erstapp.com/download`, which serves the newest archive in that bucket, and every installed copy reads the latest `appcast.xml` once a day, so publishing the release is what updates everyone.
 
 Versions are plain numbers: 0.1.0, then 0.1.1, 0.1.2, and so on. There is no beta channel.
 
@@ -37,6 +37,8 @@ The update signing key is the most important secret of the project. Every instal
 app/.build/artifacts/sparkle/Sparkle/bin/generate_keys --account erst -x erst-sparkle-key
 ```
 
+4. Install Wrangler (`brew install cloudflare-wrangler`) and run `wrangler login` with the Cloudflare account that owns erstapp.com. The release uploads the DMG with it.
+
 ## Every release
 
 1. Raise `version` under `[workspace.package]` in `Cargo.toml`, run `scripts/check.sh`, and commit and push to `main`.
@@ -49,9 +51,19 @@ app/.build/artifacts/sparkle/Sparkle/bin/generate_keys --account erst -x erst-sp
    scripts/release.sh notes.txt
    ```
 
-   The script builds the app and the DMG with the Developer ID and the hardened runtime, notarizes and staples the DMG, signs it with the update key, writes `appcast.xml`, and creates the release `v<version>` with both files.
+   The script builds the app and the DMG with the Developer ID and the hardened runtime, notarizes and staples the DMG, signs it with the update key, writes `appcast.xml`, creates the release `v<version>` with both files, and uploads the DMG to the bucket twice: as `v<version>/Erst.dmg`, and as `Erst.dmg`, which the website serves within five minutes.
 
 4. Open the release page, then check the update from an installed copy: Settings, About, Check Now.
+
+## The website
+
+`site/` is erstapp.com: a Cloudflare Worker named `erstapp` that serves the files in `site/` and answers `/download` from the `erst-releases` bucket (`site/worker.js`, `site/wrangler.jsonc`). Publish a change to the site with:
+
+```sh
+cd site && wrangler deploy
+```
+
+A release never needs a deploy: the download follows the bucket. `www.erstapp.com` redirects to `erstapp.com`.
 
 ## Testing an update before it ships
 

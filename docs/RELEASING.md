@@ -14,7 +14,7 @@ Releases are signed with `Developer ID Application: Santiago Gaviria (J5T6L3M274
 
 On another Mac, double-click the `.p12` to import it before you build.
 
-`scripts/release.sh --unnotarized notes.txt` publishes a release signed with the self-signed `Erst Development` certificate and without notarization, the way 0.1.0 first shipped privately. Do not use it for a public release: macOS stops its first launch, and the certificate change takes the permissions away. The script refuses an ad hoc signature in either mode.
+`scripts/release.sh --unnotarized notes.txt` publishes a release signed with the self-signed `Erst Development` certificate and without notarization, for private builds only. Do not use it for a public release: macOS stops its first launch, and the certificate change takes the permissions away. The script refuses an ad hoc signature in either mode.
 
 ## Once per Mac
 

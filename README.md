@@ -145,8 +145,8 @@ The core is Rust and the app is Swift:
 
 ## Install
 
-1. Download `Erst.dmg` from the [latest release](../../releases/latest).
-2. Drag Erst into Applications and open it.
+1. Download `Erst.dmg` from [erstapp.com](https://erstapp.com/download).
+2. Drag Erst into Applications and open it. Erst is signed with a Developer ID and notarized by Apple, so macOS opens it without a warning.
 3. Allow Screen Recording, so Erst can see the screen, and Accessibility, so it can read window titles and page addresses.
 4. Press <kbd>⌥</kbd> <kbd>Space</kbd>.
 

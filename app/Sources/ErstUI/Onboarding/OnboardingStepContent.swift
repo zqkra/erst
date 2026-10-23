@@ -6,16 +6,23 @@ struct OnboardingStepContent: View {
     let step: OnboardingStep
     let state: OnboardingState
     let actions: OnboardingActions
+    let shortcuts: ShortcutsModel
 
     var body: some View {
         switch step {
         case .welcome: EmptyView()
         case .permissions: permissions
-        case .timeline: ShortcutTry.timeline(isDone: state.hasOpenedTimeline)
-        case .search: ShortcutTry.search(isDone: state.hasOpenedSearch)
+        case .timeline:
+            ShortcutTry(
+                action: .timeline, shortcuts: shortcuts, isDone: state.hasOpenedTimeline,
+                doneLine: "That is your timeline. It opens over any app.")
+        case .search:
+            ShortcutTry(
+                action: .search, shortcuts: shortcuts, isDone: state.hasOpenedSearch,
+                doneLine: "That is search. It opens over any app too.")
         case .agents:
             OnboardingAgents(agents: state.agents, error: state.agentError, connect: actions.connect)
-        case .ready: OnboardingReady()
+        case .ready: OnboardingReady(shortcuts: shortcuts.shortcuts)
         }
     }
 
@@ -70,17 +77,19 @@ struct OnboardingAgents: View {
 
 /// Where Erst lives once onboarding closes, and the two shortcuts that open it.
 struct OnboardingReady: View {
+    let shortcuts: ShortcutSet
+
     var body: some View {
         VStack(spacing: Spacing.small) {
             OnboardingRow(
                 symbol: "menubar.rectangle", title: "In your menu bar",
                 subtitle: "Open, pause, or quit Erst from there", trailing: .empty)
             VStack(spacing: 0) {
-                ShortcutLine(title: "Open your timeline", keys: ["⌥", "Space"])
+                ShortcutLine(title: "Open your timeline", keys: shortcuts.timeline.keys)
                 Rectangle()
                     .fill(Color.erstHairline)
                     .frame(height: ControlMetrics.hairlinePoints)
-                ShortcutLine(title: "Search everything you saw", keys: ["⌥", "⇧", "Space"])
+                ShortcutLine(title: "Search everything you saw", keys: shortcuts.search.keys)
             }
             .padding(.horizontal, Spacing.large)
             .background {

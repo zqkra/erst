@@ -22,6 +22,8 @@ public enum OnboardingLayout {
     static let keyHeight: CGFloat = 72
     static let keyModifierWidth: CGFloat = 84
     static let spaceKeyWidth: CGFloat = 236
+    /// Return, Delete, Page Down, and other keys that write their name.
+    static let wideKeyWidth: CGFloat = 132
     static let keyRadius: CGFloat = 14
     /// The key's lower edge, the depth of a physical key.
     static let keyDepth: CGFloat = 3

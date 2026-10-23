@@ -1,5 +1,4 @@
 import AppKit
-import Carbon
 import ErstKit
 import ErstModel
 import ErstUI
@@ -18,11 +17,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var overlays: OverlayController?
     /// What Settings and the menu bar show about updates; the update controller drives it.
     let updates = SoftwareUpdateModel()
+    /// The global shortcuts Settings, the menu bar, and onboarding show and change.
+    let shortcuts = ShortcutsModel()
     /// Opens Settings. SwiftUI only hands this out to a view, so the menu bar icon passes it in.
     @ObservationIgnored var openSettingsAction: (() -> Void)?
     @ObservationIgnored private var updateController: UpdateController?
     @ObservationIgnored private var onboarding: OnboardingController?
-    @ObservationIgnored private var hotKeys: HotKeyCenter?
+    @ObservationIgnored private var hotKeys: GlobalHotKeys?
     @ObservationIgnored private var retention: RetentionJob?
     @ObservationIgnored private var reminders: ReminderLoop?
     @ObservationIgnored private var startupTask: Task<Void, Never>?
@@ -187,7 +188,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             appLog.notice("Engine opened at \(environment.service.dataDirectory.path, privacy: .public)")
             guard !Task.isCancelled else { return }
             overlays = OverlayController(service: environment.service)
-            onboarding = OnboardingController(environment: environment)
+            onboarding = OnboardingController(environment: environment, shortcuts: shortcuts)
             // Onboarding teaches the shortcuts by watching the user open the real surfaces.
             overlays?.onShow = { [weak self] surface in self?.onboarding?.noteShown(surface) }
             overlays?.onDismiss = { [weak self] in self?.onboarding?.noteOverlayDismissed() }
@@ -235,17 +236,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func configureHotKeys() {
-        let hotKeys = HotKeyCenter()
-        // The timeline is the way in; search opens from it, or directly with Shift.
-        hotKeys.register(HotKeyShortcut(keyCode: 49, modifiers: UInt32(optionKey)), identifier: "timeline") {
-            [weak self] in
-            self?.overlays?.toggleTimeline()
+        // The timeline is the way in; search opens from it, or directly with its own shortcut.
+        let hotKeys = GlobalHotKeys { [weak self] action in
+            switch action {
+            case .timeline: self?.overlays?.toggleTimeline()
+            case .search: self?.overlays?.toggleSearch()
+            }
         }
-        hotKeys.register(
-            HotKeyShortcut(keyCode: 49, modifiers: UInt32(optionKey | shiftKey)), identifier: "search"
-        ) { [weak self] in
-            self?.overlays?.toggleSearch()
-        }
+        shortcuts.shortcuts = hotKeys.shortcuts
+        shortcuts.actions = ShortcutsModel.Actions(
+            apply: { [weak hotKeys] in hotKeys?.apply($0) },
+            setPaused: { [weak hotKeys] in hotKeys?.setPaused($0) })
         self.hotKeys = hotKeys
     }
 

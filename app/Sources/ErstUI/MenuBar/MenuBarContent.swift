@@ -12,6 +12,7 @@ public struct MenuBarContent: View {
     private let onResume: () -> Void
     private let onOpenSettings: () -> Void
     private let updates: SoftwareUpdateModel?
+    private let shortcuts: ShortcutsModel
     private let onUpdate: () -> Void
     private let onFixPermission: () -> Void
     private let onQuit: () -> Void
@@ -25,6 +26,7 @@ public struct MenuBarContent: View {
         onResume: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void = {},
         updates: SoftwareUpdateModel? = nil,
+        shortcuts: ShortcutsModel = ShortcutsModel(),
         onUpdate: @escaping () -> Void = {},
         onFixPermission: @escaping () -> Void = {},
         onQuit: @escaping () -> Void = {}
@@ -37,6 +39,7 @@ public struct MenuBarContent: View {
         self.onResume = onResume
         self.onOpenSettings = onOpenSettings
         self.updates = updates
+        self.shortcuts = shortcuts
         self.onUpdate = onUpdate
         self.onFixPermission = onFixPermission
         self.onQuit = onQuit
@@ -111,6 +114,7 @@ public struct MenuBarContent: View {
             ForEach(actions, id: \.self) { action in
                 MenuBarRow(
                     action: action,
+                    shortcut: action.shortcut(in: shortcuts.shortcuts),
                     isHighlighted: model.highlighted == action,
                     onHover: { model.hover(action, inside: $0) },
                     perform: { perform(action) }

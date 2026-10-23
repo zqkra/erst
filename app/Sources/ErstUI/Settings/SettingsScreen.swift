@@ -6,16 +6,19 @@ public struct SettingsScreen: View {
     @StateObject private var model: SettingsModel
     @Environment(\.erstOpaquePanels) private var opaquePanels
     private let updates: SoftwareUpdateModel
+    private let shortcuts: ShortcutsModel
 
     /// `showingEraseConfirmation` opens the erase alert immediately, which snapshots use.
     public init(
         service: any MemoryService,
         agents: any AgentClientService,
         updates: SoftwareUpdateModel = SoftwareUpdateModel(),
+        shortcuts: ShortcutsModel = ShortcutsModel(),
         initialSection: SettingsSection = .general,
         showingEraseConfirmation: Bool = false
     ) {
         self.updates = updates
+        self.shortcuts = shortcuts
         _model = StateObject(
             wrappedValue: SettingsModel(
                 service: service,
@@ -93,7 +96,7 @@ public struct SettingsScreen: View {
         case .agents:
             AgentsSettingsView(model: model)
         case .shortcuts:
-            ShortcutsSettingsView(model: model)
+            ShortcutsSettingsView(shortcuts: shortcuts)
         case .about:
             AboutSettingsView(model: model, updates: updates)
         }

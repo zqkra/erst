@@ -38,6 +38,7 @@ struct AppMenu: View {
                 }
             },
             updates: delegate.updates,
+            shortcuts: delegate.shortcuts,
             onUpdate: {
                 closeThen {
                     NSApp.activate()

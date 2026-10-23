@@ -24,7 +24,7 @@ Erst is a memory of your Mac's screen. It records what you see, keeps only the m
 
 ### Go back to any moment
 
-Press <kbd>⌥</kbd> <kbd>Space</kbd> anywhere. The timeline opens on the latest moment, and the frame fills the panel.
+Press <kbd>⌥</kbd> <kbd>Space</kbd> anywhere. The timeline opens on the latest moment, and the frame fills the panel. Both global shortcuts can be changed in Settings, Shortcuts, or right where onboarding asks you to press them.
 
 - Scroll or drag the strip to move through the day. <kbd>←</kbd> and <kbd>→</kbd> step one moment, and with <kbd>⇧</kbd> they jump to the next app.
 - The bars are heat: the taller and warmer a bar, the more the screen changed in the minute around it.

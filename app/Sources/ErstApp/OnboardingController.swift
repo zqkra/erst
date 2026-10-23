@@ -20,6 +20,7 @@ final class OnboardingController {
         width: OnboardingLayout.windowWidth, height: OnboardingLayout.windowHeight)
     private(set) var awaitingContinue = false
     private let environment: AppEnvironment
+    private let shortcuts: ShortcutsModel
     private let window: NSWindow
     private let host = NSHostingView(rootView: AnyView(EmptyView()))
     private var step: OnboardingStep = .welcome
@@ -27,8 +28,9 @@ final class OnboardingController {
         permissions: PermissionsState(screenRecording: false, accessibility: false))
     private var askedForScreenRecording = false
 
-    init(environment: AppEnvironment) {
+    init(environment: AppEnvironment, shortcuts: ShortcutsModel) {
         self.environment = environment
+        self.shortcuts = shortcuts
         // Deferred: most launches never show onboarding, so the window gets its backing store and
         // its content only when it first appears.
         // AppKit counts the title bar on top of the content rect even when the content runs under
@@ -118,7 +120,7 @@ final class OnboardingController {
             step == .permissions && askedForScreenRecording && !state.permissions.screenRecording
         host.rootView = AnyView(
             VStack(spacing: 0) {
-                OnboardingScreen(step: step, state: state, actions: actions)
+                OnboardingScreen(step: step, state: state, actions: actions, shortcuts: shortcuts)
                 if needsReopen {
                     RelaunchNotice(onReopen: { [weak self] in self?.quitAndReopen() })
                 }

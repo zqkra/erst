@@ -1,3 +1,4 @@
+import ErstModel
 import Foundation
 
 /// The steps of first launch. After the welcome and the permissions, each step teaches by doing:
@@ -23,16 +24,17 @@ public enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    public var detail: String {
+    /// What the step asks, naming the shortcuts the user chose.
+    public func detail(shortcuts: ShortcutSet = .default) -> String {
         switch self {
         case .welcome:
             "Erst remembers what you see on your screen, so you can find it again. It all stays on this Mac."
         case .permissions:
             "Erst reads the text on your screen and keeps it on this Mac. Nothing is sent anywhere."
         case .timeline:
-            "Press Option and Space together. Your timeline opens over everything. Press Escape to come back here."
+            "Press \(shortcuts.timeline.spokenText) together. Your timeline opens over everything. Press Escape to come back here."
         case .search:
-            "Press Option, Shift and Space, then type a word you saw a minute ago."
+            "Press \(shortcuts.search.spokenText), then type a word you saw a minute ago."
         case .agents:
             "Your coding agents can ask Erst what you saw, only when you ask them to. Try \u{201C}What was that article I read this morning?\u{201D}"
         case .ready:

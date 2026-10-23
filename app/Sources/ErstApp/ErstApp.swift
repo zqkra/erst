@@ -34,7 +34,8 @@ struct ErstApp: App {
         Settings {
             if let environment = delegate.environment {
                 SettingsScreen(
-                    service: environment.service, agents: environment.agents, updates: delegate.updates
+                    service: environment.service, agents: environment.agents, updates: delegate.updates,
+                    shortcuts: delegate.shortcuts
                 )
                 .darkWindowAppearance()
                 .placesWindowOnActiveSpace()

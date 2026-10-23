@@ -49,6 +49,8 @@ struct ErstSnapshots {
                 height: OnboardingLayout.windowHeight
             )
         }
+        try await captureShortcutChanges(
+            runner: runner, service: service, agents: agents, clients: agentClients)
         let midHistory = TimelineModel(service: service, now: now)
         await midHistory.load()
         if let midDate = Calendar.current.date(bySettingHour: 12, minute: 30, second: 0, of: now) {
@@ -158,6 +160,33 @@ struct ErstSnapshots {
         try await UpdateSnapshots.capture(runner: runner, service: service, agents: agents, now: now)
         print("Snapshots written to \(folder.path)")
         exit(0)
+    }
+
+    /// Changing a global shortcut: onboarding while it waits for keys and after it changed, and
+    /// Settings while it records with keys macOS holds.
+    @MainActor
+    private static func captureShortcutChanges(
+        runner: SnapshotRenderer, service: PreviewMemoryService, agents: PreviewAgentClientService,
+        clients: [AgentClient]
+    ) async throws {
+        let custom = ShortcutSet(
+            timeline: GlobalShortcut(keyCode: 40, modifiers: [.control, .option], key: "K"),
+            search: ShortcutSet.default.search)
+        let state = onboardingState(for: .timeline, agents: clients)
+        for (name, model) in [
+            ("changing", ShortcutsModel(recording: .timeline)), ("custom", ShortcutsModel(shortcuts: custom)),
+        ] {
+            try await runner.capture(
+                OnboardingScreen(step: .timeline, state: state, shortcuts: model),
+                name: "onboarding-timeline-\(name)", width: OnboardingLayout.windowWidth,
+                height: OnboardingLayout.windowHeight)
+        }
+        try await runner.capture(
+            SettingsScreen(
+                service: service, agents: agents,
+                shortcuts: ShortcutsModel(shortcuts: custom, recording: .search, problem: .usedByMacOS),
+                initialSection: .shortcuts),
+            name: "settings-shortcuts-recording", width: 1000, height: 700)
     }
 
     private static let menuBarStates: [(String, RecorderStatus)] = [

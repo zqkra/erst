@@ -18,6 +18,7 @@ enum SnapshotContracts {
         try ReadingBlocksContract.verify()
         try TrackRunsContract.verify()
         try MarkContract.verify()
+        try ShortcutContract.verify()
         try OverlaySurfaceContract.verify()
         try await settingsActions()
         try await scrollDocumentMemory()
@@ -31,7 +32,7 @@ enum SnapshotContracts {
         print(
             "Contracts passed: settings JSON, filtered search, timeline track, track heat, prepend, "
                 + "window titles, reading blocks, track chips, mark, overlay clicks, scroll memory, timeline opens on the newest frame, erase, agents, "
-                + "debounced saves, fonts.")
+                + "debounced saves, global shortcuts, fonts.")
     }
 
     private static func settingsDocuments() throws {

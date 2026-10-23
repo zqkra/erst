@@ -27,7 +27,7 @@ struct OnboardingWelcome: View {
                 .erstStyle(Typography.welcomeTitle)
                 .foregroundStyle(Color.erstText)
                 .erstArrival(0)
-            Text(OnboardingStep.welcome.detail)
+            Text(OnboardingStep.welcome.detail())
                 .erstStyle(Typography.lead)
                 .foregroundStyle(Color.erstSecondary)
                 .multilineTextAlignment(.center)

@@ -1,3 +1,4 @@
+import ErstModel
 import SwiftUI
 
 /// A command in the menu bar window, in menu order.
@@ -43,12 +44,12 @@ enum MenuBarAction: Hashable {
         }
     }
 
-    /// The glyphs shown at the trailing edge. The overlay shortcuts are global; Settings and Quit
-    /// also work while the window is open, through `keyboardShortcut`.
-    var shortcut: String? {
+    /// The glyphs shown at the trailing edge. The overlay shortcuts are the global ones the user
+    /// chose; Settings and Quit also work while the window is open, through `keyboardShortcut`.
+    func shortcut(in shortcuts: ShortcutSet) -> String? {
         switch self {
-        case .openTimeline: "\u{2325}Space"
-        case .search: "\u{2325}\u{21E7}Space"
+        case .openTimeline: shortcuts.timeline.menuText
+        case .search: shortcuts.search.menuText
         case .activity, .pause, .resume, .update: nil
         case .settings: "\u{2318},"
         case .quit: "\u{2318}Q"
@@ -67,6 +68,7 @@ enum MenuBarAction: Hashable {
 /// One command row. The pointer and the arrow keys share one highlight, like a menu item.
 struct MenuBarRow: View {
     let action: MenuBarAction
+    let shortcut: String?
     let isHighlighted: Bool
     let onHover: (Bool) -> Void
     let perform: () -> Void
@@ -78,7 +80,7 @@ struct MenuBarRow: View {
                     .erstStyle(Typography.body)
                     .foregroundStyle(Color.erstText)
                 Spacer(minLength: Spacing.small)
-                if let shortcut = action.shortcut {
+                if let shortcut {
                     Text(shortcut)
                         .erstStyle(Typography.body)
                         .foregroundStyle(Color.erstSecondary)

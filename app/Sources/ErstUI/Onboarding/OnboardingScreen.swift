@@ -7,13 +7,16 @@ public struct OnboardingScreen: View {
     private let step: OnboardingStep
     private let state: OnboardingState
     private let actions: OnboardingActions
+    private let shortcuts: ShortcutsModel
 
     public init(
-        step: OnboardingStep = .welcome, state: OnboardingState, actions: OnboardingActions = .init()
+        step: OnboardingStep = .welcome, state: OnboardingState, actions: OnboardingActions = .init(),
+        shortcuts: ShortcutsModel = ShortcutsModel()
     ) {
         self.step = step
         self.state = state
         self.actions = actions
+        self.shortcuts = shortcuts
     }
 
     public var body: some View {
@@ -40,14 +43,14 @@ public struct OnboardingScreen: View {
                 .foregroundStyle(Color.erstText)
                 .padding(.bottom, Spacing.small)
                 .erstArrival(0)
-            Text(step.detail)
+            Text(step.detail(shortcuts: shortcuts.shortcuts))
                 .erstStyle(Typography.lead)
                 .foregroundStyle(Color.erstSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(width: OnboardingLayout.detailWidth, alignment: .leading)
                 .erstArrival(1)
             Spacer(minLength: Spacing.xxxLarge)
-            OnboardingStepContent(step: step, state: state, actions: actions)
+            OnboardingStepContent(step: step, state: state, actions: actions, shortcuts: shortcuts)
                 .erstArrival(2, blurs: false)
             Spacer(minLength: Spacing.xxxLarge)
             footer

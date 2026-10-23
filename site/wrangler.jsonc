@@ -1,0 +1,19 @@
+// The website at erstapp.com: `cd site && wrangler deploy`. docs/RELEASING.md has the details.
+{
+  "name": "erstapp",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "routes": [
+    { "pattern": "erstapp.com", "custom_domain": true },
+    { "pattern": "www.erstapp.com", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "not_found_handling": "404-page"
+  },
+  "r2_buckets": [{ "binding": "RELEASES", "bucket_name": "erst-releases" }],
+  "observability": { "enabled": true }
+}

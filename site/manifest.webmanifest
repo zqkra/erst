@@ -1,0 +1,21 @@
+{
+  "name": "Erst",
+  "short_name": "Erst",
+  "description": "A private memory of everything on your Mac’s screen.",
+  "start_url": "/",
+  "display": "browser",
+  "theme_color": "#0E0E0F",
+  "background_color": "#0E0E0F",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

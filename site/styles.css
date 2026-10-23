@@ -1,0 +1,238 @@
+/* Hallmark · shape: day of echoes, kept from Paper "05 Website" · genre: atmospheric · theme: brand
+ * paper: oklch(0.164 0.002 286) · accent: oklch(0.886 0.121 90.2) · display: Jost · body: Jost · hero: Ledge, the mark on its echo horizon above the copy, rings live · nav: wordmark and GitHub stars · footer: the mark at poster scale behind the last download · signature: echoes that travel with the scroll
+ * axes: dark/geometric-sans/warm · posture: centered hero, left-aligned chapters · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · waive 44a · the mark and its echo horizon fill the space above the headline · the hero is a Ledge: the mark sits on its horizon above the copy, as in the launch film */
+/* Hallmark · waive 83 · four pictures, all real Erst screens and the Mac drawn in heat · the page sells the product, so its screens carry the chapters */
+/* Hallmark · dismissed 29 · the privacy cards are Erst's Liquid Glass over the live echoes, the same material the app's panels use */
+/* Hallmark · dismissed 58 · the agents screen counts the two terminal sessions, which are the product talking, not prose */
+/* Hallmark · pre-emit critique: P4 H5 E4 S5 R4 V5 · weakest: P, the copy states facts more than it argues; kept it, because the owner's voice is plain and every line is a real behavior of the app */
+@import url("./tokens.css");
+@import url("./base.css");
+
+@font-face { font-family: "Jost"; src: url("fonts/Jost.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "Inter Tight"; src: url("fonts/InterTight-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("fonts/JetBrainsMono.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+
+:root {
+  --display-weight: 500;
+  --text-hero: clamp(2.5rem, 3.4vw + 1rem, 4rem);
+  --text-chapter: clamp(2.25rem, 2.4vw + 1rem, 3.5rem);
+  --text-chapter-lead: clamp(1.125rem, 0.3vw + 1rem, 1.3125rem);
+  /* What the first screen has left after the copy, so the whole hero fits on a short window too. */
+  --art-hero: clamp(280px, 100svh - 400px, 534px);
+  --mark-size: clamp(180px, 18vw, 260px);
+}
+
+html { background: var(--color-paper); }
+body { background: transparent; }
+
+/* The echoes are drawn live behind everything. Without WebGL each section shows a still. */
+.echo { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; display: none; }
+.gl .echo { display: block; }
+
+.wordmark { font-family: var(--font-outlier); font-weight: 600; letter-spacing: -0.055em; color: var(--color-ink); text-decoration: none; }
+.dim { color: var(--color-term-dim); }
+
+/* Nav */
+/* Above the hero, which starts at the top of the page under it and would otherwise take its clicks. */
+.nav { display: flex; align-items: center; justify-content: space-between; padding-top: 28px; position: absolute; inset-inline: 0; top: 0; z-index: 10; }
+.nav .wordmark { font-size: 28px; line-height: 32px; border-radius: 6px; }
+.nav__links { display: flex; align-items: center; gap: var(--space-lg); }
+.nav__link { color: var(--color-muted); text-decoration: none; font-weight: 500; font-size: 15px; line-height: 20px; border-radius: 6px; transition: color var(--dur-short) var(--ease-out); }
+.nav__link:hover { color: var(--color-ink); }
+/* The GitHub pill: a butter star and the live count, as dev tools show it. */
+.star {
+  display: inline-flex; align-items: center; gap: 9px; height: 38px; padding: 0 var(--space-md) 0 14px; border-radius: var(--radius-pill);
+  background: var(--color-pill); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 9%); color: var(--color-muted); text-decoration: none;
+  font-weight: 500; font-size: 15px; line-height: 20px; white-space: nowrap;
+  transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+}
+.star:hover { background: var(--color-pill-hover); color: var(--color-ink); }
+.star:active { transform: scale(0.97); }
+/* A drawn star, not a filled one: a hairline outline that warms to butter on hover. */
+.star__icon { width: 16px; height: 16px; flex: none; fill: transparent; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; transition: fill var(--dur-short) var(--ease-out), stroke var(--dur-short) var(--ease-out); }
+.star:hover .star__icon { fill: color-mix(in oklab, var(--color-accent) 22%, transparent); stroke: var(--color-accent); }
+.star__label b { color: var(--color-ink); font-weight: 600; }
+.star--large { height: 52px; gap: 10px; padding: 0 var(--space-lg) 0 20px; font-size: 16px; }
+.star--large .star__icon { width: 18px; height: 18px; }
+
+/* The not found page */
+.lost { min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-md); padding: var(--space-xl) var(--gutter); text-align: center; }
+.lost img { width: 160px; height: auto; mix-blend-mode: lighten; margin-bottom: var(--space-sm); }
+.lost h1 { font-size: var(--text-chapter); line-height: 1.14; }
+.lost .button { margin-top: var(--space-md); }
+
+/* Buttons */
+.button {
+  display: inline-flex; align-items: center; height: 52px; padding: 0 28px; border-radius: var(--radius-pill);
+  background: var(--color-accent); color: var(--color-accent-ink); font-weight: 500; font-size: 17px; line-height: 22px; text-decoration: none;
+  transition: background-color var(--dur-short) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+}
+.button:hover { background: var(--color-accent-hover); }
+.button:active { transform: scale(0.97); background: var(--color-accent-press); }
+/* Fine print the way Apple sets it: the system face, small and quiet, in plain sentences. */
+.fine { font-family: var(--font-ui); font-size: 12px; line-height: 16px; letter-spacing: 0.01em; color: color-mix(in oklab, var(--color-muted) 82%, transparent); }
+.lead { color: var(--color-muted); }
+
+/* Hero */
+/* The hero is the whole first screen: its stack sits in the middle and the story starts below the fold. */
+.hero { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100svh; text-align: center; padding: var(--space-2xl) var(--gutter); }
+.hero__art { height: var(--art-hero); width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.hero__mark { width: var(--mark-size); height: auto; mix-blend-mode: lighten; }
+.hero__title { max-width: none; font-size: var(--text-hero); line-height: 1.125; margin-top: var(--space-md); }
+.hero__lead { margin-top: var(--space-sm); font-size: clamp(1.125rem, 0.5vw + 1rem, 1.375rem); line-height: 1.45; }
+.hero__actions { display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); margin-top: 36px; }
+
+/* Chapters */
+.chapter { position: relative; padding-block: var(--section-gap) var(--section-gap-l); }
+.chapter--timeline { padding-block: var(--section-gap-s) 0; }
+/* The day: the timeline holds still in the middle of the window while the page scrolls, and each
+   step of the scroll goes back to an earlier moment, as scrolling the timeline does in the app. */
+.day { margin-top: 72px; }
+.day__stick { display: grid; place-items: center; }
+.shot--timeline { position: relative; width: min(1312px, 100% - 2 * var(--gutter), (100svh - 2 * var(--space-xl)) * 1400 / 984); aspect-ratio: 1400 / 984; }
+.day__frame, .sequence__canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 28px; }
+.scrubs { height: calc(100svh + var(--scrub)); }
+.day.scrubs { margin-top: 0; }
+.day.scrubs .day__stick { position: sticky; top: 0; height: 100svh; }
+.chapter h2 { max-width: none; font-size: var(--text-chapter); line-height: 1.14; }
+.chapter .lead { margin-top: 20px; font-size: var(--text-chapter-lead); line-height: 1.52; max-width: 560px; }
+.chapter__copy { display: flex; flex-direction: column; align-items: flex-start; }
+.chapter__copy--wide .lead { max-width: 600px; }
+
+.shot { margin: 0; }
+.shot img { width: 100%; height: auto; }
+.shot--search { position: relative; }
+.shot--search img { border-radius: 26px; }
+.typing { position: absolute; inset: 0; overflow: hidden; border-radius: 26px; background: url(assets/search-empty.webp) center / 100% 100%; }
+.typing__piece { position: absolute; overflow: hidden; }
+.shot--search .typing__piece img { position: absolute; max-width: none; height: auto; border-radius: 0; }
+.typing__card { opacity: 0; transform: translateY(12px); transition: opacity 380ms var(--ease-out), transform 520ms var(--ease-out); }
+.typing__card.is-shown { opacity: 1; transform: none; }
+.typing__caret { position: absolute; border-radius: 2px; background: #f8d677; }
+.typing__caret.is-waiting { animation: blink 1.06s steps(1) infinite; }
+.shot--activity img { border-radius: 22px; box-shadow: 0 0 0 1px var(--color-edge); }
+
+.split { display: grid; grid-template-columns: minmax(0, 340fr) minmax(0, 792fr); gap: clamp(32px, 5vw, 68px); align-items: center; }
+.split--reverse { grid-template-columns: minmax(0, 792fr) minmax(0, 340fr); }
+.split__copy h2 { font-size: var(--text-chapter); }
+
+/* Terminals */
+.terminals { position: relative; height: 520px; margin-top: 56px; }
+.term { position: absolute; margin: 0; display: flex; flex-direction: column; border-radius: var(--radius-window); overflow: clip; font-family: var(--font-mono); background: var(--color-term); box-shadow: 0 0 0 1px var(--color-edge); }
+.term--claude { left: var(--gutter); top: 0; width: min(780px, 62%); }
+.term--shell { right: var(--gutter); top: 150px; width: min(540px, 44%); background: var(--color-term-2); }
+.term__bar { position: relative; height: 38px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--color-term-bar-rule); }
+.term__lights { position: absolute; left: 14px; top: 13px; display: flex; gap: var(--space-xs); }
+.term__lights i { width: 12px; height: 12px; border-radius: 6px; background: var(--color-light-close); }
+.term__lights i:nth-child(2) { background: var(--color-light-min); }
+.term__lights i:nth-child(3) { background: var(--color-light-zoom); }
+.term__title { font-family: var(--font-ui); font-weight: 500; font-size: 13px; line-height: 16px; color: var(--color-term-dim); }
+.term__screen { display: flex; flex-direction: column; gap: var(--space-lg); padding: var(--space-lg) var(--space-lg) 20px; font-size: 15px; line-height: 22px; color: var(--color-term-text); }
+.term__screen p { margin: 0; max-width: none; }
+.term--shell .term__screen { gap: var(--space-sm); padding: 20px var(--space-lg) var(--space-lg); font-size: 14px; line-height: 21px; }
+.claude__welcome { display: flex; align-items: center; gap: var(--space-md); }
+.claude__clawd { width: 62px; height: 50px; fill: var(--color-clawd); }
+.claude__clawd .claude__eye { fill: var(--color-term); }
+.claude__name { font-weight: 700; }
+.term__screen .claude__dir { color: var(--color-term-dim); margin-top: var(--space-3xs); }
+.term__screen .claude__prompt { margin-inline: calc(-1 * var(--space-sm)); padding: var(--space-xs) var(--space-sm); background: var(--color-term-row); }
+.claude__call, .claude__answer { display: flex; flex-direction: column; gap: var(--space-2xs); }
+.claude__answer { gap: var(--space-sm); }
+.claude__answer ul { list-style: none; margin: 0; padding: 0 0 0 var(--space-lg); display: flex; flex-direction: column; gap: var(--space-2xs); }
+.claude__dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: var(--space-md); vertical-align: 2px; background: var(--color-term-text); }
+.claude__dot--ok { background: var(--color-term-ok); }
+.claude__result { padding-left: var(--space-lg); }
+.claude__input { display: flex; align-items: center; gap: var(--space-sm); margin-top: var(--space-sm); padding: var(--space-sm) 0; border-block: 1px solid var(--color-term-rule); }
+.term__screen .claude__hint { padding-left: var(--space-lg); margin-top: calc(-1 * var(--space-sm)); color: var(--color-term-dim); }
+.cursor { display: inline-block; width: 9px; height: 19px; margin-left: var(--space-3xs); vertical-align: -4px; background: var(--color-term-text); }
+.term--shell .cursor { width: 8px; height: 17px; }
+.term code { font: inherit; color: inherit; }
+.shell__out { margin: 0; font: inherit; color: var(--color-term-output); white-space: pre; }
+
+/* Privacy */
+.mac { margin-top: var(--space-lg); }
+.mac__stage { position: relative; width: min(1440px, 100%); margin-inline: auto; aspect-ratio: 1440 / 640; }
+.mac__frame { position: absolute; inset: 0; width: 100%; height: 100%; mix-blend-mode: lighten; }
+.card {
+  position: absolute; width: clamp(240px, 21.1vw, 304px); padding: 20px var(--space-lg); border-radius: var(--radius-card);
+  background: var(--color-glass); -webkit-backdrop-filter: blur(22px) saturate(140%); backdrop-filter: blur(22px) saturate(140%);
+}
+.card h3 { max-width: none; font-size: 17px; line-height: 24px; font-weight: 500; letter-spacing: 0; }
+.card p { margin-top: var(--space-2xs); font-size: 15px; line-height: 22px; color: var(--color-muted); }
+.card--local { left: 8.9%; top: 14.4%; }
+.card--passwords { left: 13.9%; top: 49.7%; }
+.card--agents { left: 70%; top: 8.75%; }
+.card--erase { left: 65.3%; top: 45.3%; }
+
+/* Ending */
+.ending { position: relative; min-height: 820px; display: flex; flex-direction: column; justify-content: space-between; overflow: clip; padding-block: 168px 48px; }
+.ending__mark { position: absolute; top: 0; right: 0; width: 1440px; max-width: none; height: 820px; }
+.ending__download, .ending__footer { position: relative; }
+.ending__download h2 { max-width: 14ch; font-size: clamp(2.5rem, 3.4vw + 1rem, 4rem); line-height: 1.125; }
+.ending__download .lead { margin-top: 20px; max-width: 520px; font-size: var(--text-chapter-lead); line-height: 1.52; }
+.ending__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); margin-top: 36px; }
+.ending__download .fine { margin-top: var(--space-md); }
+.ending__footer { display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-3xl); }
+.ending__sign { display: flex; align-items: baseline; gap: var(--space-md); color: var(--color-muted); font-size: 15px; }
+.ending__sign .wordmark { font-size: 24px; line-height: 28px; }
+.ending__footer nav { display: flex; flex-wrap: wrap; gap: var(--space-xs) 28px; }
+.ending__footer nav a { color: var(--color-muted); text-decoration: none; font-size: 15px; line-height: 22px; border-radius: 4px; transition: color var(--dur-short) var(--ease-out); }
+.ending__footer nav a:hover { color: var(--color-ink); }
+
+/* Stills, for browsers without WebGL */
+html:not(.gl) .hero { background: url("assets/still-hero.webp") top center / max(1440px, 100%) auto no-repeat; }
+html:not(.gl) .hero__mark { opacity: 0; }
+html:not(.gl) .day__stick { background: url("assets/still-day.webp") center / cover no-repeat; }
+html:not(.gl) .chapter--search { background: url("assets/still-ground-search.webp") center / max(1440px, 100%) 100% no-repeat; }
+html:not(.gl) .chapter--activity { background: url("assets/still-ground-activity.webp") center / max(1440px, 100%) 100% no-repeat; }
+html:not(.gl) .chapter--agents { background: url("assets/still-ground-agents.webp") center / max(1440px, 100%) 100% no-repeat; }
+html:not(.gl) .mac__stage { background: url("assets/still-mac.webp") center / 100% 100% no-repeat; }
+html:not(.gl) .mac__frame { opacity: 0; }
+
+/* Arrival: each part rises out of a blur, one after another, as the app's surfaces do. Glass and
+   windows only fade and move. Without script or with reduced motion, everything is already there. */
+@media (prefers-reduced-motion: no-preference) {
+  .js .arrive, .js [data-reveal] [style*="--i"], .js .mac[data-reveal] .card, .js [data-terminals] .term {
+    opacity: 0; transform: translateY(12px); filter: blur(8px);
+    transition: opacity var(--dur-arrive) var(--ease-settle), transform var(--dur-arrive) var(--ease-settle), filter var(--dur-arrive) var(--ease-settle);
+    transition-delay: calc(var(--i, 0) * 70ms);
+  }
+  .js .mac[data-reveal] .card, .js [data-terminals] .term { filter: none; transform: translateY(16px); }
+  .js .mac[data-reveal] .card { transition-delay: calc(240ms + var(--i, 0) * 110ms); }
+  .js [data-terminals] .term--shell { transition-delay: 180ms; }
+  .js .arrive.is-in, .js .is-in [style*="--i"], .js .mac.is-in .card, .js [data-terminals].is-in .term { opacity: 1; transform: none; filter: none; }
+  .js .hero__mark.arrive { transform: scale(0.98); }
+  .js .hero__mark.arrive.is-in { transform: none; }
+
+  /* The giant mark develops as the page reaches it: sharp heat out of a soft glow of nothing. */
+  .js .ending__mark { opacity: 0.25; filter: blur(18px); transition: opacity 1200ms var(--ease-settle), filter 1200ms var(--ease-settle); }
+  .js .ending.is-in .ending__mark { opacity: 1; filter: none; }
+
+  /* The terminals play once: the question is typed, then each answer appears. */
+  .js [data-terminals] [data-step] { opacity: 0; transform: translateY(6px); transition: opacity 360ms var(--ease-settle), transform 360ms var(--ease-settle); }
+  .js [data-terminals] [data-step].is-shown { opacity: 1; transform: none; }
+  .js [data-terminals] .cursor { animation: blink 1.06s steps(1) 5 both; }
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Narrow windows stack what overlaps on a desktop. */
+@media (max-width: 60rem) {
+  .nav { padding-top: 20px; }
+  .hero { padding-top: var(--space-2xl); }
+  .split, .split--reverse { grid-template-columns: minmax(0, 1fr); }
+  .split--reverse .split__copy { order: -1; }
+  .day__frame, .shot--timeline .sequence__canvas { border-radius: 14px; }
+  .terminals { height: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .term { min-width: 0; }
+  .term { position: relative; inset: auto; width: auto; }
+  .term--claude, .term--shell { left: auto; right: auto; top: auto; width: auto; }
+  .term__screen { font-size: 13px; line-height: 20px; overflow-x: auto; }
+  .term--shell .term__screen { font-size: 12px; line-height: 19px; }
+  .mac__stage { aspect-ratio: auto; display: grid; gap: var(--space-sm); padding: calc(100vw * 640 / 1440 + var(--space-sm)) var(--gutter) 0; }
+  .mac__frame { inset: 0 0 auto; height: auto; aspect-ratio: 1440 / 640; }
+  html:not(.gl) .mac__stage { background-size: 100% auto; background-position: top center; }
+  .card { position: relative; inset: auto; width: auto; }
+  .ending { min-height: 760px; padding-top: 120px; }
+  .ending__mark { left: auto; right: -560px; transform: none; top: auto; bottom: 60px; width: 1100px; height: auto; }
+}

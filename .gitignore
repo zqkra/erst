@@ -24,3 +24,6 @@ __pycache__/
 
 # Dependencies of the preview screens' renderer
 design/preview-screens/node_modules/
+
+# Wrangler state for the website
+site/.wrangler/

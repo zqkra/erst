@@ -1,24 +1,23 @@
-// erstapp.com: the website's files, and /download, which always serves the newest Erst.dmg from the
-// erst-releases bucket that scripts/release.sh fills on every release.
-const ARCHIVE = 'Erst.dmg';
+// erstapp.com: the website's files, plus what the erst-releases bucket holds, which
+// scripts/release.sh fills on every release: /download serves the newest Erst.dmg,
+// /download/v<version>/Erst.dmg each version's, and /appcast.xml the feed the app updates from.
+const VERSIONED = /^\/download\/(v\d+\.\d+\.\d+)\/Erst\.dmg$/;
 
-async function download(request, env) {
+async function serve(request, env, key, type, headersFor) {
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
   }
   const object = request.method === 'HEAD'
-    ? await env.RELEASES.head(ARCHIVE)
-    : await env.RELEASES.get(ARCHIVE, { range: request.headers, onlyIf: request.headers });
-  if (!object) return new Response('Erst cannot be downloaded right now. Please try again soon.', { status: 503 });
+    ? await env.RELEASES.head(key)
+    : await env.RELEASES.get(key, { range: request.headers, onlyIf: request.headers });
+  if (!object) return new Response('Not available right now. Please try again soon.', { status: 404 });
 
   const headers = new Headers();
   object.writeHttpMetadata(headers);
-  headers.set('content-type', 'application/x-apple-diskimage');
-  headers.set('content-disposition', `attachment; filename="${ARCHIVE}"`);
+  headers.set('content-type', type);
   headers.set('etag', object.httpEtag);
   headers.set('accept-ranges', 'bytes');
-  // A new release reaches every visitor within five minutes.
-  headers.set('cache-control', 'public, max-age=300');
+  for (const [name, value] of Object.entries(headersFor)) headers.set(name, value);
   if (request.method === 'HEAD') {
     headers.set('content-length', String(object.size));
     return new Response(null, { headers });
@@ -40,7 +39,18 @@ export default {
       url.hostname = 'erstapp.com';
       return Response.redirect(url.toString(), 301);
     }
-    if (url.pathname === '/download' || url.pathname === '/download/') return download(request, env);
+    const archive = { 'content-disposition': 'attachment; filename="Erst.dmg"' };
+    // A new release reaches every visitor and every installed copy within five minutes.
+    if (url.pathname === '/download' || url.pathname === '/download/') {
+      return serve(request, env, 'Erst.dmg', 'application/x-apple-diskimage', { ...archive, 'cache-control': 'public, max-age=300' });
+    }
+    const versioned = url.pathname.match(VERSIONED);
+    if (versioned) {
+      return serve(request, env, `${versioned[1]}/Erst.dmg`, 'application/x-apple-diskimage', { ...archive, 'cache-control': 'public, max-age=31536000, immutable' });
+    }
+    if (url.pathname === '/appcast.xml') {
+      return serve(request, env, 'appcast.xml', 'application/xml; charset=utf-8', { 'cache-control': 'public, max-age=300' });
+    }
 
     const response = await env.ASSETS.fetch(request);
     const headers = new Headers(response.headers);

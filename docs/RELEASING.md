@@ -1,6 +1,6 @@
 # Releasing
 
-Every version of Erst ships the same way: an `Erst.dmg` and an `appcast.xml` attached to a GitHub release, and the same `Erst.dmg` copied to the `erst-releases` bucket on Cloudflare R2. The download buttons on erstapp.com and in the README go to `https://erstapp.com/download`, which serves the newest archive in that bucket, and every installed copy reads the latest `appcast.xml` once a day, so publishing the release is what updates everyone.
+Every version of Erst ships the same way: an `Erst.dmg` and an `appcast.xml` attached to a GitHub release, and the same two files in the `erst-releases` bucket on Cloudflare R2, which erstapp.com serves. The download buttons on erstapp.com and in the README go to `https://erstapp.com/download`, the newest archive, and every installed copy reads `https://erstapp.com/appcast.xml` once a day and installs what it names, so publishing the release is what updates everyone, whether the repository is public or not.
 
 Versions are plain numbers: 0.1.0, then 0.1.1, 0.1.2, and so on. There is no beta channel.
 
@@ -51,7 +51,7 @@ app/.build/artifacts/sparkle/Sparkle/bin/generate_keys --account erst -x erst-sp
    scripts/release.sh notes.txt
    ```
 
-   The script builds the app and the DMG with the Developer ID and the hardened runtime, notarizes and staples the DMG, signs it with the update key, writes `appcast.xml`, creates the release `v<version>` with both files, and uploads the DMG to the bucket twice: as `v<version>/Erst.dmg`, and as `Erst.dmg`, which the website serves within five minutes.
+   The script builds the app and the DMG with the Developer ID and the hardened runtime, notarizes and staples the DMG, signs it with the update key, writes `appcast.xml`, creates the release `v<version>` with both files, and uploads to the bucket the DMG as `v<version>/Erst.dmg`, which the feed names, the DMG again as `Erst.dmg`, which the download buttons serve, and last the feed. New downloads and installed copies see the release within five minutes.
 
 4. Open the release page, then check the update from an installed copy: Settings, About, Check Now.
 
@@ -79,4 +79,4 @@ Build the feed from a higher version than the copy you test with. Sparkle waits 
 
 ## The first public release
 
-0.1.0 is published, notarized, while the repository is private. Make the repository public to launch: the feed URL and the download link only resolve once the repository is public and has a release.
+0.1.0 is published, notarized, and erstapp.com serves its download and feed. Making the repository public adds the source, the stars on the website, and the GitHub release page; downloads and updates already work without it.

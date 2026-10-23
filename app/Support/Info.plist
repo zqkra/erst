@@ -34,10 +34,12 @@
     <string>Copyright 2026 Erst. Licensed under AGPL-3.0-only.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
+    <key>SUAutomaticallyUpdate</key>
+    <true/>
     <key>SUEnableAutomaticChecks</key>
     <true/>
     <key>SUFeedURL</key>
-    <string>https://github.com/zqkra/erst/releases/latest/download/appcast.xml</string>
+    <string>https://erstapp.com/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string>R+O9i5H+lIG7scbbsRpxT1xHmRp+jFqlFxUJGK3h28w=</string>
     <key>SUVerifyUpdateBeforeExtraction</key>

@@ -18,7 +18,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
 repository="zqkra/erst"
 sparkle_account="erst"
-# erstapp.com/download serves the Erst.dmg at the top of this Cloudflare R2 bucket.
+# erstapp.com serves this Cloudflare R2 bucket: /download the Erst.dmg at its top, /appcast.xml the
+# feed every installed copy reads, and /download/v<version>/Erst.dmg the archive that feed names.
 downloads_bucket="erst-releases"
 release_dir="$ERST_ROOT/dist/release"
 gatekeeper_note="This build is not notarized by Apple yet; notarization is on its way. Drag Erst into \
@@ -135,7 +136,7 @@ main() {
     if [[ "$notarized" == true ]]; then
         notarize "$release_dir/Erst.dmg"
     fi
-    base_url="${ERST_RELEASE_BASE_URL:-https://github.com/$repository/releases/download/v$version}"
+    base_url="${ERST_RELEASE_BASE_URL:-https://erstapp.com/download/v$version}"
     write_appcast "$version" "$notes_file" "$release_dir/Erst.dmg" "$base_url"
     # The release page carries the notes, and how to open a build Apple has not notarized.
     cp "$notes_file" "$release_dir/release-notes.md"
@@ -149,13 +150,15 @@ main() {
             --repo "$repository" --target main --title "Erst $version" \
             --notes-file "$release_dir/release-notes.md"
         printf '==> Published https://github.com/%s/releases/tag/v%s\n' "$repository" "$version"
-        # Each version stays under its tag, and the copy at the top is what the website's download
-        # buttons serve, so they follow every release without a deploy.
+        # Each version stays under its tag, the copy at the top is what the website's download
+        # buttons serve, and the feed goes last, so it never names an archive that is not there yet.
         wrangler r2 object put "$downloads_bucket/v$version/Erst.dmg" --file "$release_dir/Erst.dmg" \
             --content-type application/x-apple-diskimage --remote
         wrangler r2 object put "$downloads_bucket/Erst.dmg" --file "$release_dir/Erst.dmg" \
             --content-type application/x-apple-diskimage --remote
-        printf '==> https://erstapp.com/download serves %s\n' "$version"
+        wrangler r2 object put "$downloads_bucket/appcast.xml" --file "$release_dir/appcast.xml" \
+            --content-type "application/xml; charset=utf-8" --remote
+        printf '==> erstapp.com serves %s to new downloads and installed copies\n' "$version"
     fi
 }
 

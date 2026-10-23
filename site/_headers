@@ -1,0 +1,18 @@
+# Headers for the files Cloudflare serves without the Worker (site/worker.js sets the same on its
+# own responses). The one inline script in index.html is allowed by its hash in the
+# Content-Security-Policy, which also lets in Cloudflare's visitor analytics; change the script and
+# the hash must change too. Art and fonts are kept an
+# hour and refreshed in the background.
+/*
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.github.com https://cloudflareinsights.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests
+
+/assets/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/fonts/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400

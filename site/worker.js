@@ -1,4 +1,4 @@
-// erstapp.com: the website's files, plus what the erst-releases bucket holds, which
+// erstapp.com: the home page, plus what the erst-releases bucket holds, which
 // scripts/release.sh fills on every release: /download serves the newest Erst.dmg,
 // /download/v<version>/Erst.dmg each version's, and /appcast.xml the feed the app updates from.
 const VERSIONED = /^\/download\/(v\d+\.\d+\.\d+)\/Erst\.dmg$/;
@@ -58,10 +58,9 @@ export default {
     headers.set('x-content-type-options', 'nosniff');
     headers.set('referrer-policy', 'strict-origin-when-cross-origin');
     headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
-    // Pages are checked on every visit; art and fonts are kept an hour and refreshed in the background.
-    if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/fonts/')) {
-      headers.set('cache-control', 'public, max-age=3600, stale-while-revalidate=86400');
-    }
+    headers.set('cross-origin-opener-policy', 'same-origin');
+    // The one inline script in index.html is allowed by its hash; change it and the hash must change too.
+    headers.set('content-security-policy', "default-src 'self'; script-src 'self' 'sha256-e2g5HkZP+fghbsY1m7moq4GopOo7zRRaAHNyQ2Q7oSI=' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.github.com https://cloudflareinsights.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests");
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   },
 };

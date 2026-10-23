@@ -57,7 +57,7 @@ app/.build/artifacts/sparkle/Sparkle/bin/generate_keys --account erst -x erst-sp
 
 ## The website
 
-`site/` is erstapp.com: a Cloudflare Worker named `erstapp` that serves the files in `site/` and answers `/download` from the `erst-releases` bucket (`site/worker.js`, `site/wrangler.jsonc`). Publish a change to the site with:
+`site/` is erstapp.com: a Cloudflare Worker named `erstapp` (`site/worker.js`, `site/wrangler.jsonc`) that answers the home page, `/download`, and `/appcast.xml`, the last two from the `erst-releases` bucket. Every other file is served directly, which is free and unlimited, with the headers in `site/_headers`. The home page's one inline script is allowed by its hash in the Content-Security-Policy, set in both files: change the script and the hash must change too. Publish a change to the site with:
 
 ```sh
 cd site && wrangler deploy

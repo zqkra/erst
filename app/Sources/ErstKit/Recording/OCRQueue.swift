@@ -39,10 +39,16 @@ actor OCRQueue {
     /// every later frame back.
     private static let recognitionDeadline = Duration.seconds(60)
     /// How long to leave Vision alone after a read got stuck, before a new reader tries again.
+    /// It doubles with each stuck read of the run, up to an hour, because a stuck read keeps its
+    /// thread and its frame copy for good.
     private static let pauseAfterHang = Duration.seconds(300)
+    private static let longestPauseAfterHang = Duration.seconds(3600)
+    /// After this many stuck reads, Vision is broken on this host until it restarts: the queue
+    /// stops reading text for the rest of the run, so stuck reads cannot pile up threads and
+    /// memory. Frames are still recorded, without text.
+    private static let stuckReadsBeforeStopping = 6
 
-    /// Replaced when a read gets stuck: the stuck read keeps its reader busy for good.
-    private var recognizer: TextRecognizer
+    private let recognizer: TextRecognizer
     private var active: Job?
     private var pending: Job?
     private var backlog: [Job] = []
@@ -53,6 +59,7 @@ actor OCRQueue {
     private var loggedBacklogDrop = false
     private var loggedPause = false
     private var consecutiveFailures = 0
+    private var stuckReads = 0
     private var pausedUntil: ContinuousClock.Instant?
     private var suppressedID: UInt64?
     private var jobs = 0
@@ -94,7 +101,7 @@ actor OCRQueue {
             bytes: Self.byteCount(of: frame.frame.pixelBuffer),
             completion: completion
         )
-        if let pausedUntil, ContinuousClock.now < pausedUntil {
+        if isPaused {
             await storeWithoutText(job)
             return
         }
@@ -205,6 +212,14 @@ actor OCRQueue {
 
     private func start(_ job: Job) {
         active = job
+        guard !isPaused else {
+            // A frame that waited while recognition stopped gets no text, like every frame of the
+            // pause. It goes through `complete` so a drain still waits for it.
+            task = Task { [weak self] in
+                await self?.complete(job, lines: [], reading: nil, elapsedMilliseconds: 0)
+            }
+            return
+        }
         let signature = TileSignature(job.frame.frame.pixelBuffer)
         let plan = readPlan(for: signature)
         let recognizer = recognizer
@@ -221,7 +236,7 @@ actor OCRQueue {
                         try await recognizer.recognizeText(in: frame.frame.pixelBuffer, regions: regions)
                     }
                     guard let lines else {
-                        await self.abandonStuckRecognizer()
+                        await self.pauseAfterStuckRead()
                         await self.complete(job, lines: [], reading: nil, elapsedMilliseconds: 0)
                         return
                     }
@@ -242,6 +257,11 @@ actor OCRQueue {
         }
     }
 
+    private var isPaused: Bool {
+        guard stuckReads < Self.stuckReadsBeforeStopping else { return true }
+        return pausedUntil.map { ContinuousClock.now < $0 } ?? false
+    }
+
     private var readPriority: TaskPriority {
         guard let lastDrop, lastDrop.duration(to: .now) < Self.urgentAfterDrop else { return .background }
         return .utility
@@ -256,17 +276,24 @@ actor OCRQueue {
         return ReadPlan.make(changed: changed, signature: signature, previousLines: baseline.lines)
     }
 
-    /// Gives up on a read stuck inside Vision: a new reader takes over after a pause, and the
-    /// frames in between are stored without text.
-    private func abandonStuckRecognizer() {
-        recognizer = TextRecognizer()
+    /// Gives up on a read stuck inside Vision: reading starts again after a pause, and the frames
+    /// in between are stored without text. The stuck call holds only its own GCD thread, so the
+    /// recognizer stays usable.
+    private func pauseAfterStuckRead() {
         baseline = nil
         consecutiveFailures = 0
-        pausedUntil = ContinuousClock.now.advanced(by: Self.pauseAfterHang)
+        stuckReads += 1
         let seconds = Int(Self.recognitionDeadline.components.seconds)
-        let pause = Int(Self.pauseAfterHang.components.seconds)
+        guard stuckReads < Self.stuckReadsBeforeStopping else {
+            ocrQueueLog.error(
+                "Text recognition did not finish in \(seconds, privacy: .public) s, \(self.stuckReads, privacy: .public) times; no more text is read until Erst restarts"
+            )
+            return
+        }
+        let pause = min(Self.pauseAfterHang * (1 << (stuckReads - 1)), Self.longestPauseAfterHang)
+        pausedUntil = ContinuousClock.now.advanced(by: pause)
         ocrQueueLog.error(
-            "Text recognition did not finish in \(seconds, privacy: .public) s; pausing it for \(pause, privacy: .public) s"
+            "Text recognition did not finish in \(seconds, privacy: .public) s; pausing it for \(Int(pause.components.seconds), privacy: .public) s"
         )
     }
 

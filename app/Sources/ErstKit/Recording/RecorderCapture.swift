@@ -96,9 +96,11 @@ extension Recorder {
         lastKeptFocus = focus
         lastKeptAt = frame.capturedAt
         framesKept += 1
+        // Text recognition reads a copy, so ScreenCaptureKit gets its buffer back even when a
+        // read takes long or never returns.
         let queued = QueuedFrame(
             id: pendingID,
-            frame: frame,
+            frame: frame.owningCopy(),
             segmentID: segmentID,
             ptsMilliseconds: result.ptsMilliseconds,
             focus: focus,

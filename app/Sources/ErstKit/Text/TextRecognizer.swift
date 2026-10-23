@@ -21,8 +21,13 @@ public actor TextRecognizer {
     private static let levelPolicy = OSAllocatedUnfairLock(initialState: RecognitionLevelPolicy())
 
     private var warmUpTask: Task<Double, Never>?
+    /// Test hook: with `ERST_TEST_STUCK_TEXT_RECOGNITION` set, every read after the warm-up blocks
+    /// for good, holding its frame, as Vision did on macOS 27. It lets the recorder's handling of
+    /// a stuck read be checked in the real app; without the variable it does nothing.
+    private static let simulatesStuckRead =
+        ProcessInfo.processInfo.environment["ERST_TEST_STUCK_TEXT_RECOGNITION"] != nil
 
-    /// Creates a recognizer. Recognition runs on the actor's background executor.
+    /// Creates a recognizer. Each Vision call runs on a GCD thread (`onSystemThread`).
     public init() {}
 
     /// Loads Vision's text models once per process and returns the load time in milliseconds.
@@ -48,17 +53,57 @@ public actor TextRecognizer {
     public func recognizeText(
         in pixelBuffer: CVPixelBuffer, regions: [CGRect]? = nil
     ) async throws -> [RecognizedLine] {
+        let frame = ReadOnlyFrame(pixelBuffer: pixelBuffer)
+        if Self.simulatesStuckRead, self !== Self.warmUpOwner {
+            try await Self.onSystemThread { Self.holdForever(frame.pixelBuffer) }
+        }
         let level = Self.levelPolicy.withLock { $0.level(at: .now) }
         guard level == .accurate else {
-            return try Self.recognize(pixelBuffer, level: .fast, regions: regions)
+            return try await Self.onSystemThread {
+                try Self.recognize(frame.pixelBuffer, level: .fast, regions: regions)
+            }
         }
         do {
-            let lines = try Self.recognize(pixelBuffer, level: .accurate, regions: regions)
+            let lines = try await Self.onSystemThread {
+                try Self.recognize(frame.pixelBuffer, level: .accurate, regions: regions)
+            }
             Self.log(Self.levelPolicy.withLock { $0.accurateSucceeded() }, error: nil)
             return lines
         } catch {
             Self.log(Self.levelPolicy.withLock { $0.accurateFailed(at: .now) }, error: error)
-            return try Self.recognize(pixelBuffer, level: .fast, regions: regions)
+            return try await Self.onSystemThread {
+                try Self.recognize(frame.pixelBuffer, level: .fast, regions: regions)
+            }
+        }
+    }
+
+    /// Runs a Vision call on a GCD thread at the caller's priority, so background reads stay on
+    /// the efficiency cores. Vision blocks its thread for the whole read, and on macOS 27 a read
+    /// never returned: such a call then holds a GCD thread, never one of the few threads that
+    /// Swift's tasks share and the recorder needs.
+    private static func onSystemThread<T: Sendable>(
+        _ work: @escaping @Sendable () throws -> T
+    ) async throws -> T {
+        let qos = qosClass(for: Task.currentPriority)
+        return try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: qos).async {
+                continuation.resume(with: Result { try work() })
+            }
+        }
+    }
+
+    private static func qosClass(for priority: TaskPriority) -> DispatchQoS.QoSClass {
+        if priority <= .background { return .background }
+        if priority <= .utility { return .utility }
+        if priority <= .medium { return .default }
+        return .userInitiated
+    }
+
+    /// Blocks its thread for good and keeps the frame, the way the stuck Vision read did.
+    private static func holdForever(_ pixelBuffer: CVPixelBuffer) -> Never {
+        let never = DispatchSemaphore(value: 0)
+        while true {
+            withExtendedLifetime(pixelBuffer) { never.wait() }
         }
     }
 
@@ -82,9 +127,9 @@ public actor TextRecognizer {
         let area = region ?? CGRect(x: 0, y: 0, width: 1, height: 1)
         let pixelHeight = Float(CVPixelBufferGetHeight(pixelBuffer)) * Float(area.height)
         guard pixelHeight > 0, area.width > 0 else { return [] }
-        // Vision builds autoreleased images and Observers for every request. The queue that
-        // calls this is a long running async task with no run loop, so without this pool the
-        // frame's Vision memory would stay resident until an unrelated drain.
+        // Vision builds autoreleased images and Observers for every request. The GCD thread
+        // that calls this has no run loop, so without this pool the frame's Vision memory
+        // would stay resident until an unrelated drain.
         return try autoreleasepool {
             let request = VNRecognizeTextRequest()
             request.recognitionLevel = level
@@ -173,4 +218,10 @@ public actor TextRecognizer {
         let height = min(max(box.height, 0), 1 - y)
         return CGRect(x: x, y: y, width: width, height: height)
     }
+}
+
+/// Hands a frame to the thread that runs Vision. Vision only reads the pixels, and nothing writes
+/// a frame after capture, so the buffer is safe to share.
+private struct ReadOnlyFrame: @unchecked Sendable {
+    let pixelBuffer: CVPixelBuffer
 }

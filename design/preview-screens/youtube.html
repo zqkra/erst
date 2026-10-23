@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Money is not a float: rounding, currencies, and the bugs we ship - YouTube</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { --bar: #0f0f0f; --ink: #e6e6e6; --ink-quiet: #9a9a9a; --field: rgba(255, 255, 255, 0.1); --bar-line: rgba(255, 255, 255, 0.06); background: #0f0f0f; color: #f1f1f1; font-family: -apple-system, "Roboto", sans-serif; }
+  .mast { height: 56px; display: flex; align-items: center; padding: 0 16px 0 20px; gap: 18px; }
+  .ytlogo { display: flex; align-items: center; gap: 3px; font-weight: 700; font-size: 19px; letter-spacing: -1px; }
+  .ytlogo i { width: 29px; height: 20px; border-radius: 6px; background: #ff0033; display: grid; place-items: center; }
+  .ytlogo i::after { content: ""; border-left: 8px solid #fff; border-top: 5px solid transparent; border-bottom: 5px solid transparent; margin-left: 2px; }
+  .ysearch { margin-left: 150px; display: flex; align-items: center; gap: 12px; }
+  .ysearch .field { width: 520px; height: 40px; border: 1px solid #303030; border-radius: 20px 0 0 20px; background: #121212; display: flex; align-items: center; padding: 0 16px; color: #888; font-size: 16px; }
+  .ysearch .go { width: 64px; height: 40px; margin-left: -12px; background: #222; border: 1px solid #303030; border-radius: 0 20px 20px 0; display: grid; place-items: center; }
+  .ysearch .mic { width: 40px; height: 40px; border-radius: 50%; background: #181818; display: grid; place-items: center; }
+  .mast .end { margin-left: auto; display: flex; gap: 16px; align-items: center; }
+  .create { background: #272727; border-radius: 18px; padding: 8px 14px; font-size: 14px; font-weight: 600; }
+  .bell { position: relative; } .bell span { position: absolute; top: -6px; right: -9px; background: #cc0000; border-radius: 8px; font-size: 10px; padding: 0 4px; line-height: 15px; }
+  .watch { display: flex; gap: 24px; padding: 8px 24px 0; }
+  .primary { width: 970px; flex: none; }
+  .player { position: relative; width: 970px; height: 546px; border-radius: 12px; overflow: hidden; background: #000; }
+  .slide { position: absolute; inset: 0; display: none; }
+  .slide.on { display: block; }
+  .s0 { background: #f3eee4; color: #1c1b19; padding: 120px 90px; }
+  .s0 h2 { font-size: 66px; line-height: 1.02; margin: 0; letter-spacing: -2px; font-weight: 800; }
+  .s0 p { font-size: 24px; margin: 22px 0 0; color: #5d5a54; }
+  .s0 .by { position: absolute; left: 90px; bottom: 70px; font-size: 18px; font-weight: 600; color: #8a6d3b; }
+  .s1 { background: #14161b; color: #e7e3da; padding: 80px 90px; }
+  .s1 h2 { font-size: 40px; margin: 0 0 34px; letter-spacing: -1px; }
+  .s1 pre { margin: 0; font: 22px/1.8 "SF Mono", ui-monospace, Menlo, monospace; }
+  .s1 .n { color: #f6a663; } .s1 .c { color: #6b7280; } .s1 .f { color: #82aaff; }
+  .s2 { background: #2b2a6e; color: #fff; padding: 110px 90px; }
+  .s2 div { font-size: 56px; font-weight: 800; line-height: 1.2; letter-spacing: -1.5px; }
+  .s2 div:nth-child(2) { color: #ffd479; } .s2 div:nth-child(3) { color: #9ee6c0; }
+  .pip { position: absolute; right: 18px; top: 18px; width: 252px; height: 168px; border-radius: 10px; overflow: hidden; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); }
+  .pip img { width: 100%; height: 100%; object-fit: cover; object-position: 55% 40%; }
+  .controls { position: absolute; left: 0; right: 0; bottom: 0; height: 90px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.75)); }
+  .progress { position: absolute; left: 12px; right: 12px; bottom: 50px; height: 3px; background: rgba(255, 255, 255, 0.25); }
+  .progress i { position: absolute; left: 0; top: 0; bottom: 0; background: #ff0033; }
+  .progress b { position: absolute; top: -5px; width: 13px; height: 13px; border-radius: 50%; background: #ff0033; margin-left: -6px; }
+  .ctl { position: absolute; left: 16px; right: 16px; bottom: 10px; display: flex; align-items: center; gap: 20px; font-size: 14px; }
+  .ctl .end { margin-left: auto; display: flex; gap: 20px; }
+  .ytitle { font-size: 20px; font-weight: 700; margin: 12px 0 8px; line-height: 1.4; }
+  .chanrow { display: flex; align-items: center; gap: 12px; }
+  .chanlogo { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #2f8f6b, #164d3a); display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+  .chanrow b { display: block; font-size: 16px; } .chanrow small { color: #aaa; font-size: 12px; }
+  .sub { background: #f1f1f1; color: #0f0f0f; border-radius: 18px; padding: 9px 16px; font-weight: 600; font-size: 14px; margin-left: 12px; }
+  .pills { margin-left: auto; display: flex; gap: 8px; }
+  .pills span { background: #272727; border-radius: 18px; padding: 9px 16px; font-size: 14px; font-weight: 600; }
+  .desc { background: #272727; border-radius: 12px; padding: 12px; margin-top: 12px; font-size: 14px; line-height: 1.45; }
+  .desc b { font-weight: 600; }
+  .secondary { flex: 1; }
+  .chips { display: flex; gap: 10px; margin-bottom: 12px; }
+  .chips span { background: #272727; border-radius: 8px; padding: 6px 12px; font-size: 14px; font-weight: 600; }
+  .chips .on { background: #f1f1f1; color: #0f0f0f; }
+  .vid { display: flex; gap: 8px; margin-bottom: 8px; }
+  .thumb { position: relative; width: 168px; height: 94px; border-radius: 8px; overflow: hidden; flex: none; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .dur { position: absolute; right: 4px; bottom: 4px; background: rgba(0, 0, 0, 0.8); border-radius: 4px; font-size: 12px; font-weight: 600; padding: 1px 4px; }
+  .card { width: 100%; height: 100%; padding: 10px 12px; font-weight: 800; line-height: 1.05; display: flex; flex-direction: column; justify-content: center; }
+  .vt { font-size: 14px; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .vm { font-size: 12px; color: #aaa; margin-top: 3px; }
+</style>
+</head>
+<body class="v0">
+  <div class="safari">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <div class="tools">
+      <svg width="20" height="16" viewBox="0 0 20 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1.5" width="18" height="13" rx="3"/><path d="M7 1.5v13"/></svg>
+      <svg width="10" height="16" viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 2 8l6 6"/></svg>
+      <svg width="10" height="16" viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".35"><path d="m2 2 6 6-6 6"/></svg>
+    </div>
+    <div class="address">
+      <svg width="11" height="13" viewBox="0 0 11 13" fill="currentColor" opacity=".55"><path d="M2 5.5V4a3.5 3.5 0 0 1 7 0v1.5h.5A1.5 1.5 0 0 1 11 7v4.5A1.5 1.5 0 0 1 9.5 13h-8A1.5 1.5 0 0 1 0 11.5V7a1.5 1.5 0 0 1 1.5-1.5H2Zm1.4 0h4.2V4a2.1 2.1 0 0 0-4.2 0v1.5Z"/></svg>
+      <span>youtube.com</span>
+    </div>
+    <div class="right">
+      <svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1v11M4.5 4.5 8 1l3.5 3.5M5 7.5H3.5A1.5 1.5 0 0 0 2 9v6.5A1.5 1.5 0 0 0 3.5 17h9a1.5 1.5 0 0 0 1.5-1.5V9a1.5 1.5 0 0 0-1.5-1.5H11"/></svg>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 2v12M2 8h12"/></svg>
+      <svg width="20" height="16" viewBox="0 0 20 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="4" width="13" height="11" rx="2.5"/><path d="M5 1.5h10.5A2.5 2.5 0 0 1 18 4v8.5"/></svg>
+    </div>
+  </div>
+  <div class="page">
+    <div class="mast">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v1.6H3zM3 11.2h18v1.6H3zM3 16.4h18V18H3z"/></svg>
+      <div class="ytlogo"><i></i>YouTube</div>
+      <div class="ysearch"><div class="field">Search</div><div class="go"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></svg></div><div class="mic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div></div>
+      <div class="end"><span class="create">+ Create</span><span class="bell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17V10a7 7 0 0 1 14 0v7l2 2H3Z"/><path d="M9.5 21.5h5"/></svg><span>9+</span></span><img class="avatar" src="img/sam.jpg" width="32" height="32" alt=""></div>
+    </div>
+    <div class="watch">
+      <div class="primary">
+        <div class="player">
+          <div class="slide s0 on" data-slide="0"><h2>Money is not<br>a float</h2><p>Rounding, currencies, and the bugs we ship</p><div class="by">Lea Fischer · Northwind JS 2026</div></div>
+          <div class="slide s1" data-slide="1"><h2>Floats lie, politely</h2><pre><span class="n">0.1</span> + <span class="n">0.2</span> === <span class="n">0.3</span>         <span class="c">// false</span>
+<span class="f">Math</span>.<span class="f">round</span>(<span class="n">1.005</span> * <span class="n">100</span>)   <span class="c">// 100</span>
+<span class="n">19.99</span> * <span class="n">3</span>                <span class="c">// 59.97000000000001</span></pre></div>
+          <div class="slide s2" data-slide="2"><div>Store minor units.</div><div>Round once.</div><div>Format at the edge.</div></div>
+          <div class="pip"><img src="img/speaker.jpg" alt=""></div>
+          <div class="controls">
+            <div class="progress"><i id="played"></i><b id="head"></b></div>
+            <div class="ctl">
+              <svg width="20" height="22" viewBox="0 0 20 22" fill="#fff"><rect x="3" y="2" width="4.5" height="18" rx="1"/><rect x="12.5" y="2" width="4.5" height="18" rx="1"/></svg>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="#fff"><path d="M3 3l10 7-10 7ZM14 3h3v14h-3Z"/></svg>
+              <svg width="22" height="20" viewBox="0 0 22 20" fill="none" stroke="#fff" stroke-width="1.8"><path d="M2 7h4l5-4v14l-5-4H2Z" fill="#fff"/><path d="M14.5 6.5a5 5 0 0 1 0 7M17 4a8.5 8.5 0 0 1 0 12"/></svg>
+              <span id="time">3:12 / 31:40</span><span id="chapter" style="color:#ddd">· The bug report</span>
+              <div class="end"><span style="font-weight:700;border:1.5px solid #fff;border-radius:3px;padding:0 4px;font-size:11px">CC</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg><svg width="22" height="20" viewBox="0 0 22 20" fill="none" stroke="#fff" stroke-width="1.8"><rect x="2" y="4" width="18" height="12" rx="2"/></svg><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#fff" stroke-width="1.8"><path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="ytitle">Money is not a float: rounding, currencies, and the bugs we ship | Lea Fischer | Northwind JS 2026</div>
+        <div class="chanrow"><span class="chanlogo">NJS</span><div><b>Northwind JS</b><small>48.2K subscribers</small></div><span class="sub">Subscribe</span>
+          <div class="pills"><span>👍 3.1K  |  👎</span><span>↗ Share</span><span>⤓ Download</span><span>···</span></div></div>
+        <div class="desc"><b>84K views  3 months ago  #javascript #typescript</b><br>Floating point math is fine until it touches money. Lea walks through three real invoice bugs, why they happened, and the four rules her team follows now: store minor units, round once, format at the edge, and test the currencies with no decimals. ...more</div>
+      </div>
+      <div class="secondary">
+        <div class="chips"><span class="on">All</span><span>From Northwind JS</span><span>Related</span><span>For you</span></div>
+        <div class="vid"><div class="thumb"><img src="img/pairing.jpg" alt=""><span class="dur">18:42</span></div><div><div class="vt">Code review that does not hurt: a field guide</div><div class="vm">The Pragmatic Dev</div><div class="vm">212K views · 1 year ago</div></div></div>
+        <div class="vid"><div class="thumb"><div class="card" style="background:linear-gradient(135deg,#0f2f22,#1d6b4a)"><span style="font-size:22px;color:#b9f5d0">TESTS<br>YOU TRUST</span><span style="font-size:13px;color:#fff;margin-top:6px">✓ 41 passed</span></div><span class="dur">24:10</span></div><div><div class="vt">Writing tests you actually trust</div><div class="vm">Erin Walsh</div><div class="vm">96K views · 4 months ago</div></div></div>
+        <div class="vid"><div class="thumb"><div class="card" style="background:linear-gradient(135deg,#ff7a18,#af002d)"><span style="font:700 17px/1.2 SF Mono, Menlo, monospace;color:#fff">git rebase -i</span><span style="font-size:26px;color:#fff;margin-top:4px">IN 12 MIN</span></div><span class="dur">12:03</span></div><div><div class="vt">Git rebase in 12 minutes, without fear</div><div class="vm">Byte Sized</div><div class="vm">1.1M views · 2 years ago</div></div></div>
+        <div class="vid"><div class="thumb"><img src="img/desk.jpg" alt=""><span class="dur">9:58</span></div><div><div class="vt">My 2026 desk setup for remote work</div><div class="vm">Marcus Reid</div><div class="vm">340K views · 2 weeks ago</div></div></div>
+        <div class="vid"><div class="thumb"><div class="card" style="background:linear-gradient(135deg,#1b3b8f,#3f7ae0)"><span style="font-size:15px;color:#cfe0ff">Intl.NumberFormat</span><span style="font-size:24px;color:#fff;margin-top:4px">¥1,250<br><s style="opacity:.6;font-size:16px">¥1,250.00</s></span></div><span class="dur">7:41</span></div><div><div class="vt">Intl.NumberFormat is underrated</div><div class="vm">Byte Sized</div><div class="vm">58K views · 6 months ago</div></div></div>
+        <div class="vid"><div class="thumb"><img src="img/keyboard.jpg" alt=""><span class="dur">15:20</span></div><div><div class="vt">Mechanical keyboards for programmers, honestly</div><div class="vm">Lofi Builds</div><div class="vm">780K views · 1 year ago</div></div></div>
+        <div class="vid"><div class="thumb"><img src="img/cafe.jpg" alt=""><span class="dur">29:14</span></div><div><div class="vt">Ship small: how we halved our review time</div><div class="vm">Northwind JS</div><div class="vm">41K views · 3 months ago</div></div></div>
+        <div class="vid"><div class="thumb"><div class="card" style="background:linear-gradient(135deg,#3a1c71,#d76d77)"><span style="font:700 15px/1.2 SF Mono, Menlo, monospace;color:#fff">&lt;T extends&gt;</span><span style="font-size:20px;color:#fff;margin-top:4px">GENERICS<br>WITHOUT PAIN</span></div><span class="dur">21:37</span></div><div><div class="vt">TypeScript generics without the pain</div><div class="vm">The Pragmatic Dev</div><div class="vm">402K views · 8 months ago</div></div></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // The talk plays on: the title slide, the float examples, then the rules.
+    window.variants = 3;
+    window.variant = (i) => {
+      document.querySelectorAll('[data-slide]').forEach((s) => s.classList.toggle('on', Number(s.dataset.slide) === i));
+      const [played, time, chapter] = [[10, '3:12 / 31:40', '· The bug report'], [40, '12:48 / 31:40', '· Floats lie, politely'], [76, '24:05 / 31:40', '· Four rules']][i];
+      document.getElementById('played').style.width = played + '%';
+      document.getElementById('head').style.left = played + '%';
+      document.getElementById('time').textContent = time;
+      document.getElementById('chapter').textContent = chapter;
+    };
+    window.variant(0);
+  </script>
+</body>
+</html>

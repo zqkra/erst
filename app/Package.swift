@@ -49,7 +49,7 @@ let package = Package(
             // scripts/build-app.sh puts Sparkle.framework in Contents/Frameworks.
             linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
         ),
-        .target(name: "ErstPreview", dependencies: ["ErstModel"]),
+        .target(name: "ErstPreview", dependencies: ["ErstModel"], resources: [.copy("Screens")]),
         // Development tool: renders every screen with preview data to PNG files for review.
         .executableTarget(name: "ErstSnapshots", dependencies: ["ErstModel", "ErstUI", "ErstPreview"]),
         // Development tool: runs the capture pipeline for a few seconds and prints what it kept.

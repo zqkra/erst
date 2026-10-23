@@ -305,7 +305,7 @@ One Swift package at `app/Package.swift`, tools version 6.2, platform `.macOS(.v
 | `ErstUI` | Swift, resources: Schibsted Grotesk fonts | `ErstModel` |
 | `ErstKit` | Capture, encoding, OCR, focus, the recorder, `EngineAdapter`, `LiveMemoryService`, `AgentClientInstaller` | `ErstModel`, `ErstCore` |
 | `ErstApp` | Executable | `ErstUI`, `ErstKit`, `ErstModel`, `ErstCore`, `Sparkle` 2.10.0 (SwiftPM binary) |
-| `ErstPreview` | Development fixtures and Core Text frame rendering | `ErstModel` |
+| `ErstPreview` | Development fixtures and pre-rendered app screens | `ErstModel` |
 | `ErstSnapshots` | Development executable | `ErstModel`, `ErstUI`, `ErstPreview` |
 | `ErstProbe` | Development capture executable | `ErstKit` |
 
@@ -379,7 +379,7 @@ Search applies app and date filters before grouping and limiting results. `erase
 | `excludedApps` | `[AppRef]` | 1Password |
 | `agentHistoryDays` | 1, 7, 30, 90, nil (all history) | 7 |
 
-`PreviewMemoryService` in `ErstPreview` implements the full protocol with realistic everyday fixtures (X, WhatsApp, YouTube, Safari, Mail, Notes, Zed), a temporary data directory, selectable recorder status, and optional empty history. Erase removes overlapping preview visits and their moments. Frames use Schibsted Grotesk through Core Text and flat shapes, without a fake system menu bar. `PreviewAgentClientService` provides deterministic installed and connected states. The production adapter belongs in ErstKit.
+`PreviewMemoryService` in `ErstPreview` implements the full protocol with a developer's working day (Mail, Slack, Safari on GitHub, MDN and YouTube, Ghostty, Zed, X) in which an open source tool goes around the team, a temporary data directory, selectable recorder status, and optional empty history. Searching "open source" finds one moment in each of six apps. Erase removes overlapping preview visits and their moments. Frames are real app windows written in HTML under `design/preview-screens/` and rendered by its `render.mjs` (`npm install` once, then `node render.mjs`) into `ErstPreview/Screens`: each screen has variants at 2880 by 1800, which a visit moves through in order, and `screens.json` holds the lines of text on each, read from the page the way text recognition groups them. `PreviewAgentClientService` provides deterministic installed and connected states. The production adapter belongs in ErstKit.
 
 ### Threading
 

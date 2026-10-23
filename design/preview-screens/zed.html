@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>dependencies.md</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { background: #282c34; color: #dce0e5; }
+  .title { height: 36px; background: #3b414d; border-bottom: 1px solid #464b57; display: flex; align-items: center; padding: 0 12px 0 14px; gap: 16px; font-size: 13px; }
+  .title .proj { margin-left: 64px; display: flex; gap: 14px; align-items: center; }
+  .title .proj b { font-weight: 600; }
+  .title .branch { color: #a9afbc; display: flex; gap: 6px; align-items: center; }
+  .title .end { margin-left: auto; display: flex; gap: 14px; align-items: center; color: #a9afbc; }
+  .title .end img { border-radius: 50%; }
+  .body { position: absolute; top: 36px; bottom: 26px; left: 0; right: 0; display: flex; }
+  .tree { width: 260px; flex: none; background: #2f343e; border-right: 1px solid #464b57; padding-top: 6px; font-size: 13px; }
+  .tree div { height: 24px; display: flex; align-items: center; gap: 6px; padding-left: calc(10px + var(--d, 0) * 16px); color: #dce0e5; white-space: nowrap; }
+  .tree .dim { color: #838994; }
+  .tree .mod { color: #e5c07b; } .tree .new { color: #a1c181; }
+  .tree .on { background: #454a56; }
+  .tree .chev { width: 10px; color: #838994; font-size: 9px; }
+  .ft { width: 11px; height: 13px; border-radius: 2px 5px 2px 2px; flex: none; font-size: 0; opacity: 0.9; }
+  .ts { background: #74ade8; } .tsx { background: #6eb4bf; } .js { background: #dec184; } .json { background: #c6a0f6; } .md { background: #a9afbc; }
+  .folder { width: 14px; height: 11px; border-radius: 2px; background: #838994; flex: none; opacity: 0.8; }
+  .center { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .tabs { height: 32px; flex: none; background: #2f343e; border-bottom: 1px solid #464b57; display: flex; font-size: 13px; }
+  .tabs span { display: flex; align-items: center; gap: 7px; padding: 0 14px; border-right: 1px solid #464b57; color: #a9afbc; }
+  .tabs span.on { background: #282c34; color: #dce0e5; margin-bottom: -1px; }
+  .tabs i { width: 6px; height: 6px; border-radius: 50%; background: #74ade8; }
+  .crumbs { height: 30px; flex: none; display: flex; align-items: center; padding: 0 16px; font-size: 12.5px; color: #a9afbc; gap: 6px; }
+  .editor { flex: 1; overflow: hidden; position: relative; font: 13px/20px "SF Mono", ui-monospace, Menlo, monospace; }
+  .code { position: absolute; left: 0; right: 0; top: 0; }
+  .ln { display: flex; height: 20px; white-space: pre; position: relative; }
+  .ln .no { width: 58px; flex: none; text-align: right; padding-right: 18px; color: #4e5a5f; }
+  .ln.cur { background: #2c313c; } .ln.cur .no { color: #dce0e5; }
+  .ln .git { position: absolute; left: 46px; top: 0; width: 3px; height: 20px; }
+  .git.a { background: #a1c181; } .git.m { background: #74ade8; }
+  .blame { color: #5d636f; padding-left: 40px; }
+  .caret { display: inline-block; width: 2px; height: 18px; background: #74ade8; vertical-align: -4px; margin-left: -1px; }
+  .key { color: #e06c75; } .h { color: #e06c75; font-weight: 700; } .pipe { color: #5d636f; } .bul { color: #d19a66; }
+  .k { color: #c678dd; } .f { color: #61afef; } .s { color: #98c379; } .n { color: #d19a66; } .t { color: #e5c07b; } .c { color: #5d636f; font-style: italic; } .p { color: #e06c75; }
+  .term { height: 300px; flex: none; border-top: 1px solid #464b57; display: flex; flex-direction: column; }
+  .term .bar { height: 32px; display: flex; align-items: center; gap: 2px; padding: 0 8px; background: #2f343e; border-bottom: 1px solid #464b57; font-size: 12.5px; color: #a9afbc; }
+  .term .bar span { padding: 4px 10px; border-radius: 5px; }
+  .term .bar .on { background: #282c34; color: #dce0e5; }
+  .out { flex: 1; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 6px 14px 10px; font: 13px/19px "SF Mono", ui-monospace, Menlo, monospace; }
+  .out div { white-space: pre; min-height: 19px; flex: none; }
+  .b { color: #74ade8; font-weight: 700; } .m { color: #c678dd; font-weight: 700; } .g { color: #a1c181; } .d { color: #838994; } .y { color: #dec184; }
+  .ok { color: #282c34; background: #a1c181; font-weight: 700; } .dev { color: #282c34; background: #74ade8; font-weight: 700; }
+  .cursor { display: inline-block; width: 8px; height: 16px; background: #dce0e5; vertical-align: -3px; }
+  .status { position: absolute; left: 0; right: 0; bottom: 0; height: 26px; background: #3b414d; border-top: 1px solid #464b57; display: flex; align-items: center; gap: 16px; padding: 0 12px; font-size: 12px; color: #a9afbc; }
+  .status .end { margin-left: auto; display: flex; gap: 16px; }
+  [data-stage] { display: none; }
+  body.v0 [data-stage="0"], body.v1 [data-stage="1"], body.v2 [data-stage="2"] { display: block; }
+</style>
+</head>
+<body class="v0">
+  <div class="title">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <div class="proj"><b>web</b><span class="branch"><svg width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="3" cy="2.5" r="1.5"/><circle cx="3" cy="11.5" r="1.5"/><circle cx="9" cy="5" r="1.5"/><path d="M3 4v6M9 6.5c0 2.5-6 1.5-6 3.5"/></svg>sam/brisk-ci</span></div>
+    <div class="end"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v8M5 5l3-3 3 3M3 9v4h10V9"/></svg><img src="img/sam.jpg" width="22" height="22" alt=""></div>
+  </div>
+  <div class="body">
+    <div class="tree">
+      <div><span class="chev">▼</span><b>web</b></div>
+      <div style="--d:1" class="mod"><span class="chev">▼</span><span class="folder"></span>.github</div>
+      <div style="--d:2" class="mod"><span class="chev">▼</span><span class="folder"></span>workflows</div>
+      <div style="--d:3" class="mod" id="tree-ci"><span class="chev"></span><span class="ft json"></span>ci.yml</div>
+      <div style="--d:3"><span class="chev"></span><span class="ft json"></span>release.yml</div>
+      <div style="--d:1" class="mod"><span class="chev">▼</span><span class="folder"></span>docs</div>
+      <div style="--d:2"><span class="chev"></span><span class="ft md"></span>architecture.md</div>
+      <div style="--d:2" class="mod" id="tree-deps"><span class="chev"></span><span class="ft md"></span>dependencies.md</div>
+      <div style="--d:2"><span class="chev"></span><span class="ft md"></span>releasing.md</div>
+      <div style="--d:1" class="dim"><span class="chev">▶</span><span class="folder"></span>node_modules</div>
+      <div style="--d:1"><span class="chev">▶</span><span class="folder"></span>public</div>
+      <div style="--d:1"><span class="chev">▼</span><span class="folder"></span>src</div>
+      <div style="--d:2"><span class="chev">▶</span><span class="folder"></span>app</div>
+      <div style="--d:2"><span class="chev">▶</span><span class="folder"></span>billing</div>
+      <div style="--d:2"><span class="chev">▶</span><span class="folder"></span>components</div>
+      <div style="--d:2"><span class="chev">▶</span><span class="folder"></span>lib</div>
+      <div style="--d:2"><span class="chev"></span><span class="ft tsx"></span>main.tsx</div>
+      <div style="--d:1"><span class="chev"></span><span class="ft md"></span>README.md</div>
+      <div style="--d:1" class="mod"><span class="chev"></span><span class="ft json"></span>package.json</div>
+      <div style="--d:1"><span class="chev"></span><span class="ft json"></span>pnpm-lock.yaml</div>
+      <div style="--d:1"><span class="chev"></span><span class="ft json"></span>tsconfig.json</div>
+      <div style="--d:1"><span class="chev"></span><span class="ft ts"></span>vite.config.ts</div>
+    </div>
+    <div class="center">
+      <div class="tabs" id="tabs"></div>
+      <div class="crumbs" id="crumbs"></div>
+      <div class="editor"><div class="code" id="code"></div></div>
+      <div class="term">
+        <div class="bar"><span class="on">zsh</span><span>pnpm dev</span><span style="margin-left:auto">+</span></div>
+        <div class="out">
+<div><span class="b">~/code/fernwood/web</span> on <span class="m">sam/brisk-ci</span></div>
+<div><span class="g">❯</span> pnpm add -D brisk</div>
+<div>Packages: <span class="g">+1</span></div>
+<div>Progress: resolved 412, reused 411, downloaded 1, added 1, <b>done</b></div>
+<div> </div>
+<div><b>devDependencies:</b></div>
+<div><span class="g">+</span> brisk <span class="d">0.9.2</span></div>
+<div> </div>
+<div>Done in 1.4s</div>
+<div data-stage="0"><span class="g">❯</span> <span class="cursor"></span></div>
+<div data-stage="1"><span class="g">❯</span> pnpm brisk run --since main</div>
+<div data-stage="1"><b>brisk 0.9.2</b> <span class="d">·</span> 2 files changed since main</div>
+<div data-stage="1">  <span class="d">selected</span>  <span class="y">0</span> of 1,284 tests <span class="d">(only CI config and docs changed)</span></div>
+<div data-stage="1"><span class="g">❯</span> <span class="cursor"></span></div>
+<div data-stage="2"><span class="g">❯</span> git commit -am "Run only affected tests in CI with brisk"</div>
+<div data-stage="2">[sam/brisk-ci 3f2e9a1] Run only affected tests in CI with brisk</div>
+<div data-stage="2"> 3 files changed, 21 insertions(+), 2 deletions(-)</div>
+<div data-stage="2"><span class="g">❯</span> <span class="cursor"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="status">
+    <span style="color:#a1c181">✓ No problems</span><span>sam/brisk-ci</span>
+    <div class="end"><span id="pos"></span><span id="lang"></span><span>UTF-8</span></div>
+  </div>
+  <script>
+    const files = {
+      'ci.yml': { path: '.github/workflows/ci.yml', lang: 'YAML', added: [20, 21, 22, 23, 24, 25, 26], lines: [
+        'name: CI',
+        '',
+        'on:',
+        '  pull_request:',
+        '  push:',
+        '    branches: [main]',
+        '',
+        'jobs:',
+        '  test:',
+        '    runs-on: ubuntu-latest',
+        '    steps:',
+        '      - uses: actions/checkout@v4',
+        '        with:',
+        '          fetch-depth: 0',
+        '      - uses: pnpm/action-setup@v4',
+        '      - uses: actions/setup-node@v4',
+        '        with:',
+        '          node-version: 22',
+        '      - run: pnpm install --frozen-lockfile',
+        '      # Branches run only the tests their changes touch.',
+        '      - name: Affected tests',
+        '        if: github.ref != \'refs/heads/main\'',
+        '        run: pnpm brisk run --since origin/main',
+        '      - name: Every test',
+        '        if: github.ref == \'refs/heads/main\'',
+        '        run: pnpm test',
+        '',
+        '  lint:',
+        '    runs-on: ubuntu-latest',
+        '    steps:',
+        '      - uses: actions/checkout@v4',
+        '      - uses: pnpm/action-setup@v4',
+        '      - run: pnpm install --frozen-lockfile',
+        '      - run: pnpm lint',
+        '',
+      ] },
+      'dependencies.md': { path: 'docs/dependencies.md', lang: 'Markdown', added: [8], lines: [
+        '# Dependencies',
+        '',
+        'Every open source package we ship or run in CI, with what we use it for',
+        'and its license. Ask in #legal before adding one under a license not listed here.',
+        '',
+        '| Package  | Used for                                   | License |',
+        '| -------- | ------------------------------------------ | ------- |',
+        '| brisk    | Runs only the tests a change touches in CI | MIT     |',
+        '| react    | The web app                                | MIT     |',
+        '| date-fns | Dates on invoices and statements           | MIT     |',
+        '| vite     | Dev server and production build            | MIT     |',
+        '| vitest   | Unit and integration tests                 | MIT     |',
+        '| zod      | Checking API payloads                      | MIT     |',
+        '',
+        '## Licenses we accept',
+        '',
+        '- MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0',
+        '- Anything else needs a review from legal first.',
+        '',
+      ] },
+    };
+    const escape = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const span = (cls, text) => '<span class="' + cls + '">' + escape(text) + '</span>';
+    const paint = (line, lang) => {
+      if (lang === 'YAML') {
+        if (/^\s*#/.test(line)) return span('c', line);
+        const m = line.match(/^(\s*)(- )?([\w-]+)(:)(.*)$/);
+        if (!m) return escape(line);
+        const value = m[5];
+        let painted = escape(m[1]) + (m[2] ? span('bul', '- ') : '') + span('key', m[3]) + escape(m[4]);
+        if (/^\s*\d+$/.test(value)) painted += span('n', value);
+        else if (value.trim()) painted += span('s', value);
+        return painted;
+      }
+      if (/^#/.test(line)) return span('h', line);
+      if (/^- /.test(line)) return span('bul', '-') + escape(line.slice(1));
+      if (/^\|/.test(line)) return line.split('|').map(escape).join('<span class="pipe">|</span>');
+      return escape(line);
+    };
+    const code = document.getElementById('code');
+    const show = (name, cursor, scroll, blame) => {
+      const file = files[name];
+      code.innerHTML = file.lines.map((line, index) => {
+        const number = index + 1;
+        const mark = file.added.includes(number) ? '<span class="git a"></span>' : '';
+        const tail = number === cursor ? '<span class="blame">' + blame + '</span>' : '';
+        return '<div class="ln' + (number === cursor ? ' cur' : '') + '"><span class="no">' + number + '</span>' + mark + '<span>' + paint(line, file.lang) + tail + '</span></div>';
+      }).join('');
+      code.style.top = -scroll * 20 + 'px';
+      document.getElementById('tabs').innerHTML = ['ci.yml', 'dependencies.md', 'invoice.ts'].map((tab) =>
+        '<span' + (tab === name ? ' class="on"' : '') + '><span class="ft ' + (tab.endsWith('.md') ? 'md' : tab.endsWith('.ts') ? 'ts' : 'json') + '"></span>' + tab + (tab === 'invoice.ts' ? '' : '<i></i>') + '</span>').join('');
+      document.getElementById('crumbs').textContent = file.path;
+      document.getElementById('pos').textContent = 'Ln ' + cursor + ', Col ' + (file.lines[cursor - 1].length + 1);
+      document.getElementById('lang').textContent = file.lang;
+      document.getElementById('tree-ci').classList.toggle('on', name === 'ci.yml');
+      document.getElementById('tree-deps').classList.toggle('on', name === 'dependencies.md');
+    };
+    // Adding the tool: the CI step, then its line in the list of open source dependencies, then the commit.
+    window.variants = 3;
+    window.variant = (i) => {
+      document.body.className = 'v' + i;
+      [
+        () => show('ci.yml', 21, 4, 'You, 2 minutes ago · Uncommitted changes'),
+        () => show('ci.yml', 23, 6, 'You, 5 minutes ago · Uncommitted changes'),
+        () => show('dependencies.md', 8, 0, 'You, 1 minute ago · Run only affected tests in CI with brisk'),
+      ][i]();
+    };
+    window.variant(0);
+  </script>
+</body>
+</html>

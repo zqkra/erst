@@ -1,0 +1,33 @@
+/* Shared by every preview screen: a Mac window filling a 1440 by 900 point display. */
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1440px; height: 900px; overflow: hidden; }
+body {
+  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; }
+img.avatar { display: block; border-radius: 50%; object-fit: cover; flex: none; }
+.lights { display: flex; gap: 8px; flex: none; }
+.lights i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18); }
+.lights i:nth-child(2) { background: #febc2e; }
+.lights i:nth-child(3) { background: #28c840; }
+svg { flex: none; }
+.scroller { overflow: hidden; }
+
+/* Safari's compact toolbar. A page sets --bar and --ink to tint it the way Safari tints to a site. */
+.safari {
+  position: absolute; inset: 0 0 auto 0; height: 52px; z-index: 10;
+  display: flex; align-items: center; padding: 0 16px 0 20px; gap: 18px;
+  background: var(--bar, #f6f6f6); color: var(--ink, #3c3c3e);
+  border-bottom: 1px solid var(--bar-line, rgba(0, 0, 0, 0.1));
+}
+.safari .tools { display: flex; align-items: center; gap: 16px; margin-left: 10px; }
+.safari .address {
+  position: absolute; left: 50%; transform: translateX(-50%); width: 560px; height: 34px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  background: var(--field, rgba(0, 0, 0, 0.055)); font-size: 13.5px; letter-spacing: -0.1px;
+}
+.safari .address .grow { color: var(--ink-quiet, #8a8a8e); }
+.safari .right { margin-left: auto; display: flex; gap: 18px; align-items: center; }
+.page { position: absolute; inset: 52px 0 0 0; }

@@ -86,12 +86,13 @@ public final class PreviewMemoryService: MemoryService, @unchecked Sendable {
     }
 
     public func image(for moment: Moment.ID, maxPixelSize: Int) async throws -> CGImage {
-        let width = max(320, min(1600, maxPixelSize))
-        let key = "\(moment)-\(width)"
+        guard let record = readDataset().moment(id: moment) else {
+            throw NSError(domain: "ErstPreview", code: 404)
+        }
+        let size = max(320, min(2880, maxPixelSize))
+        let key = "\(record.image.lastPathComponent)-\(size)"
         if let cached = cachedImage(for: key) { return cached }
-        guard let record = readDataset().moment(id: moment),
-            let image = PreviewFrameRenderer.render(moment: record.moment, lines: record.lines, width: width)
-        else {
+        guard let image = PreviewScreens.image(at: record.image, maxPixelSize: size) else {
             throw NSError(domain: "ErstPreview", code: 500)
         }
         storeImage(image, for: key)

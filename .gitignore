@@ -21,3 +21,6 @@ __pycache__/
 
 # The launch film project lives outside the app repository
 /marketing/
+
+# Dependencies of the preview screens' renderer
+design/preview-screens/node_modules/

@@ -82,10 +82,10 @@ enum SnapshotContracts {
 
     private static func previewQueries() async throws {
         let service = PreviewMemoryService()
-        let hits = try await service.search(SearchQuery(text: "design system"), limit: 5000)
+        let hits = try await service.search(SearchQuery(text: "open source"), limit: 5000)
         guard let oldest = hits.last else { throw SnapshotError.noMoment }
         let query = SearchQuery(
-            text: "design system", app: oldest.moment.app, range: oldest.firstSeen...oldest.lastSeen
+            text: "open source", app: oldest.moment.app, range: oldest.firstSeen...oldest.lastSeen
         )
         let filtered = try await service.search(query, limit: 1)
         try require(filtered.first?.id == oldest.id, "Apply app and date filters before the result limit.")
@@ -95,7 +95,7 @@ enum SnapshotContracts {
         try await service.erase(oldest.firstSeen...oldest.lastSeen)
         try require(
             try await service.search(query, limit: 10).isEmpty, "Erased preview moments must disappear.")
-        let remaining = try await service.search(SearchQuery(text: "design system"), limit: 1)
+        let remaining = try await service.search(SearchQuery(text: "open source"), limit: 1)
         try require(!remaining.isEmpty, "Erasing one visit must preserve unrelated history.")
         let empty = PreviewMemoryService(includesHistory: false)
         try require(

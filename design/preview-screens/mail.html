@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Inbox</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { background: #fff; color: #1d1d1f; }
+  .side { position: absolute; left: 0; top: 0; bottom: 0; width: 232px; background: #ebebef; border-right: 1px solid #d8d8dc; padding: 14px 10px; font-size: 13px; }
+  .side .lights { margin: 2px 0 26px 8px; }
+  .side h6 { margin: 14px 8px 4px; font-size: 11px; font-weight: 600; color: #8e8e93; }
+  .side .row { height: 28px; display: flex; align-items: center; gap: 9px; padding: 0 8px; border-radius: 6px; }
+  .side .row.on { background: rgba(0, 0, 0, 0.09); }
+  .side .row svg { color: #0a84ff; }
+  .side .row .n { margin-left: auto; color: #8e8e93; }
+  .list { position: absolute; left: 232px; top: 0; bottom: 0; width: 392px; border-right: 1px solid #e3e3e6; display: flex; flex-direction: column; background: #fff; }
+  .list .head { height: 60px; flex: none; display: flex; align-items: center; padding: 0 16px; gap: 12px; }
+  .list .head b { font-size: 15px; font-weight: 700; display: block; }
+  .list .head small { color: #8e8e93; font-size: 11.5px; }
+  .list .head .tools { margin-left: auto; display: flex; gap: 16px; color: #6e6e73; }
+  .items { flex: 1; overflow: hidden; }
+  .item { position: relative; padding: 9px 16px 10px 28px; border-bottom: 1px solid #ececef; }
+  .item .top { display: flex; gap: 8px; align-items: baseline; }
+  .item .top b { font-size: 13.5px; font-weight: 650; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .top time { font-size: 12px; color: #8e8e93; }
+  .item .subj { font-size: 13px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .prev { font-size: 12.5px; color: #8e8e93; margin-top: 2px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .item .dot { position: absolute; left: 10px; top: 15px; width: 9px; height: 9px; border-radius: 50%; background: #0a84ff; }
+  .item.sel { background: #0a6cf0; border-radius: 8px; margin: 0 6px; padding-left: 22px; border-color: transparent; }
+  .item.sel .dot { left: 4px; background: #fff; }
+  .item.sel, .item.sel time, .item.sel .prev { color: #fff; }
+  .item .gh { display: inline-block; font-size: 10.5px; color: #6e6e73; border: 1px solid #d2d2d7; border-radius: 4px; padding: 0 4px; margin-left: 4px; }
+  .read { position: absolute; left: 625px; right: 0; top: 0; bottom: 0; display: flex; flex-direction: column; }
+  .read .bar { height: 52px; flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 22px; padding: 0 20px; color: #6e6e73; border-bottom: 1px solid #ececef; }
+  .scroll { flex: 1; overflow: hidden; }
+  .hdr { display: flex; gap: 12px; padding: 18px 28px 14px; border-bottom: 1px solid #ececef; }
+  .hdr img { border-radius: 50%; }
+  .hdr .who b { font-size: 15px; font-weight: 650; }
+  .hdr .who div { font-size: 12.5px; color: #6e6e73; margin-top: 2px; }
+  .hdr .when { margin-left: auto; font-size: 12.5px; color: #6e6e73; }
+  .subject { padding: 16px 28px 0; font-size: 21px; font-weight: 700; letter-spacing: -0.2px; }
+  .msg { padding: 14px 28px 40px; font-size: 14px; line-height: 1.55; max-width: 760px; }
+  .msg p { margin: 0 0 12px; }
+  .msg h4 { margin: 18px 0 6px; font-size: 15px; }
+  .msg ul { margin: 0 0 12px; padding-left: 22px; }
+  .msg a { color: #0a6cf0; text-decoration: none; }
+  .msg .mention { font-weight: 600; color: #0a6cf0; }
+  .msg code { font: 12.5px "SF Mono", ui-monospace, Menlo, monospace; background: #f2f2f5; border-radius: 4px; padding: 1px 4px; }
+  .msg .foot { margin-top: 22px; padding-top: 12px; border-top: 1px solid #ececef; font-size: 12px; color: #8e8e93; }
+  .nl { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #2b2a6e, #5b5bd6); color: #fff; font-weight: 800; font-size: 15px; display: grid; place-items: center; flex: none; }
+  .issue { font-size: 11px; letter-spacing: 1.2px; color: #8e8e93; font-weight: 600; margin-bottom: 12px; }
+  .hero { background: #14161b; color: #f4f1ea; border-radius: 12px; padding: 22px 26px; margin-bottom: 18px; }
+  .hero .kicker { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #ffd479; font-weight: 700; }
+  .hero .big { font-size: 34px; font-weight: 800; letter-spacing: -1px; margin-top: 2px; }
+  .hero .sub { color: #b9b4aa; margin-bottom: 14px; }
+  .hero .term { font: 13px/1.7 "SF Mono", ui-monospace, Menlo, monospace; background: #0b0c0f; border-radius: 8px; padding: 10px 14px; }
+  .hero .term span { color: #9ee6c0; }
+  [data-from="2"] { display: none; } body.v2 [data-from="2"] { display: block; }
+</style>
+</head>
+<body class="v0">
+  <div class="side">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <h6>Favorites</h6>
+    <div class="row on"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 8 3 1.5h10L15 8v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1Z"/><path d="M1 8h4l1 2h4l1-2h4"/></svg>Inbox<span class="n">3</span></div>
+    <div class="row"><svg width="16" height="15" viewBox="0 0 16 15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m8 1 2.1 4.4 4.8.6-3.5 3.3.9 4.7L8 11.7 3.7 14l.9-4.7L1.1 6l4.8-.6Z"/></svg>VIPs</div>
+    <div class="row"><svg width="14" height="15" viewBox="0 0 14 15" fill="none" stroke="#ff9f0a" stroke-width="1.4"><path d="M2 14V1.5h9l-2 3.5 2 3.5H2"/></svg>Flagged<span class="n">2</span></div>
+    <div class="row"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="14" height="12" rx="2"/><path d="M4 5h8M4 8h5"/></svg>Drafts</div>
+    <div class="row"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 6.5 15 1l-4 12-3-5Z"/></svg>Sent</div>
+    <h6>Fernwood</h6>
+    <div class="row"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 8 3 1.5h10L15 8v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1Z"/></svg>Inbox<span class="n">3</span></div>
+    <div class="row"><svg width="16" height="14" viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="14" height="4" rx="1"/><path d="M2 5v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5M6 8h4"/></svg>Archive</div>
+    <div class="row"><svg width="14" height="15" viewBox="0 0 14 15" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 3h12M5 3V1.5h4V3M2.5 3l1 11h7l1-11"/></svg>Trash</div>
+    <h6>Smart Mailboxes</h6>
+    <div class="row"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h12l-4.5 5.5V14l-3-1.5v-4Z"/></svg>GitHub<span class="n">12</span></div>
+    <div class="row"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h12l-4.5 5.5V14l-3-1.5v-4Z"/></svg>Releases</div>
+  </div>
+  <div class="list">
+    <div class="head"><div><b>Inbox</b><small>214 messages, 3 unread</small></div>
+      <div class="tools"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h12l-4.5 5.5V14l-3-1.5v-4Z"/></svg><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M10.5 2.5 13.5 5.5 6 13H3v-3Z"/></svg></div></div>
+    <div class="items">
+      <div class="item" data-from="2"><span class="dot"></span><div class="top"><b>GitHub</b><time>4:14 PM</time></div><div class="subj">[fernwood/web] Run only affected tests in CI (PR #486)</div><div class="prev">New from Sam Ortiz: CI now runs brisk on branches and every test on main.</div></div>
+      <div class="item sel"><span class="dot"></span><div class="top"><b>Dev Notes Weekly</b><time>3:58 PM</time></div><div class="subj">Issue #212: the open source tool everyone shared this week</div><div class="prev">brisk runs only the tests your change touches. Plus a merge queue you can host yourself and a faster tsc.</div></div>
+      <div class="item"><span class="dot"></span><div class="top"><b>Priya Nair</b><time>1:47 PM</time></div><div class="subj">Release notes for the 4pm train</div><div class="prev">Draft is in the doc. The billing fix goes at the top if it lands in time, then the faster preview deploys.</div></div>
+      <div class="item"><div class="top"><b>Amara Okafor</b><time>12:31 PM</time></div><div class="subj">New dependencies need a line in the list</div><div class="prev">Quick reminder from legal: add the package, what we use it for, and its license to docs/dependencies.md.</div></div>
+      <div class="item"><div class="top"><b>GitHub</b><time>10:41 AM</time></div><div class="subj">[fernwood/web] Run failed: CI - main (a91c3e0)</div><div class="prev">The run for the commit "Bump vite to 6.3.5" failed after 14 minutes. typecheck: Type 'string' is not assignable to type 'Currency'.</div></div>
+      <div class="item"><div class="top"><b>Jonas Weber</b><time>9:15 AM</time></div><div class="subj">Release train, Thursday</div><div class="prev">Same plan as last week: freeze at 3:30, ship at 4. Ping me if something needs a seat.</div></div>
+      <div class="item"><div class="top"><b>Calendar</b><time>8:02 AM</time></div><div class="subj">Today: Standup 9:30, Billing sync 11:00</div><div class="prev">2 events today. Billing sync with Priya Nair and Noah Park in Room 3.</div></div>
+      <div class="item"><div class="top"><b>Noah Park</b><time>Yesterday</time></div><div class="subj">CI is at 14 minutes again</div><div class="prev">Every push waits on the full suite. Worth a look at test selection before the next release?</div></div>
+    </div>
+  </div>
+  <div class="read">
+    <div class="bar">
+      <svg width="18" height="16" viewBox="0 0 18 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="16" height="4.5" rx="1"/><path d="M2.5 5.5v8a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-8M7 9h4"/></svg>
+      <svg width="16" height="17" viewBox="0 0 16 17" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 3.5h14M5.5 3.5V1.5h5v2M3 3.5l1 12h8l1-12"/></svg>
+      <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1 1 6l5 5M1 6h9a6 6 0 0 1 6 6v1"/></svg>
+      <svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 1 1 6l5 5M10 1 5 6l5 5M5 6h9a6 6 0 0 1 6 6v1"/></svg>
+      <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 1 5 5-5 5M17 6H8a6 6 0 0 0-6 6v1"/></svg>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>
+    </div>
+    <div class="scroll" id="scroll">
+      <div class="hdr"><span class="nl">DN</span><div class="who"><b>Dev Notes Weekly</b><div>To: Sam Ortiz</div></div><div class="when">Today at 3:58 PM</div></div>
+      <div class="subject">Issue #212: the open source tool everyone shared this week</div>
+      <div class="msg">
+        <div class="issue">DEV NOTES WEEKLY · ISSUE #212 · OCTOBER 23</div>
+        <div class="hero"><div class="kicker">This week's pick</div><div class="big">brisk</div><div class="sub">Run only the tests your change touches.</div><div class="term">$ brisk run --since main<br><span>selected 12 of 1,284 tests · 12 passed in 2.1s</span></div></div>
+        <p>The open source tool everyone shared this week reads your project's import graph and runs only the tests a change touches. It went from a tweet to 8,400 stars in four days, and teams in the replies report CI going from minutes to seconds.</p>
+        <p>It works with Vitest, Jest, pytest, and cargo test, caches the graph between runs, and installs with one command. <a>Read the announcement →</a></p>
+        <h4>Also worth a look</h4>
+        <ul>
+          <li><b>A merge queue you can host yourself.</b> One binary, a SQLite file, and a webhook.</li>
+          <li><b>tsc is 30% faster on large projects</b> in the latest beta, mostly from smarter caching.</li>
+          <li><b>A field guide to flaky tests,</b> with the five causes behind most of them.</li>
+        </ul>
+        <h4>From the community</h4>
+        <p>"Every team has that one tool someone saw on X, and three weeks later nobody remembers what it was called." Reply and tell us yours.</p>
+        <div class="foot">You are receiving this because you subscribed to Dev Notes Weekly. <a>Unsubscribe</a> · <a>View in browser</a></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Reading the newsletter from the top and further down, then the CI mail arrives.
+    window.variants = 3;
+    window.variant = (i) => {
+      document.body.className = 'v' + i;
+      document.getElementById('scroll').scrollTop = [0, 240, 420][i];
+    };
+  </script>
+</body>
+</html>

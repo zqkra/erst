@@ -123,16 +123,16 @@ struct ErstSnapshots {
                 isReady: { model.trimmedQuery.isEmpty ? !model.recent.isEmpty : model.hasSearched }
             )
         }
-        guard let hit = try await service.search(SearchQuery(text: "design system"), limit: 1).first else {
+        guard let hit = try await service.search(SearchQuery(text: "open source"), limit: 1).first else {
             throw SnapshotError.noMoment
         }
         try await runner.captureOverlay(
-            MomentScreen(service: service, moment: hit.moment, highlightedTerms: ["design", "system"]),
+            MomentScreen(service: service, moment: hit.moment, highlightedTerms: ["open", "source"]),
             name: "moment-search",
             panelSize: SnapshotStageMetrics.largePanelSize
         )
         let expanded = MomentModel(
-            service: service, moment: hit.moment, highlightedTerms: ["design", "system"])
+            service: service, moment: hit.moment, highlightedTerms: ["open", "source"])
         expanded.toggleTextExpanded()
         try await runner.captureOverlay(
             MomentScreen(model: expanded),
@@ -193,7 +193,7 @@ struct ErstSnapshots {
         ("recording", .recording), ("paused", .paused(until: nil)), ("permission", .needsPermission),
     ]
     private static let searchStates = [
-        ("results", "design system"), ("no-results", "unfindableword"), ("empty", ""),
+        ("results", "open source"), ("no-results", "unfindableword"), ("empty", ""),
     ]
 
     private static func stepName(_ step: OnboardingStep) -> String {

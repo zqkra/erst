@@ -32,9 +32,9 @@ enum LiveCapture {
         try await capture(
             TimelineScreen(model: timeline).darkWindowAppearance(),
             name: "timeline", size: timelineSize, folder: folder)
-        if let hit = try await service.search(SearchQuery(text: "design system"), limit: 1).first {
+        if let hit = try await service.search(SearchQuery(text: "open source"), limit: 1).first {
             try await capture(
-                MomentScreen(service: service, moment: hit.moment, highlightedTerms: ["design", "system"])
+                MomentScreen(service: service, moment: hit.moment, highlightedTerms: ["open", "source"])
                     .darkWindowAppearance(),
                 name: "moment", size: momentSize, folder: folder)
         }

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>web-team (Channel) - Fernwood - Slack</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  body { background: #3f0e40; color: #1d1c1d; font-size: 15px; }
+  .top { position: absolute; inset: 0 0 auto 0; height: 44px; display: flex; align-items: center; padding: 0 16px 0 18px; color: #fff; }
+  .top .nav { display: flex; gap: 18px; margin-left: 40px; opacity: 0.85; }
+  .top .search { position: absolute; left: 50%; transform: translateX(-50%); width: 720px; height: 28px; border-radius: 7px; background: rgba(255, 255, 255, 0.18); display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 13px; color: rgba(255, 255, 255, 0.85); }
+  .top .help { margin-left: auto; opacity: 0.85; }
+  .rail { position: absolute; left: 0; top: 44px; bottom: 0; width: 72px; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-top: 10px; color: #fff; }
+  .ws { width: 38px; height: 38px; border-radius: 9px; background: #fff; color: #3f0e40; display: grid; place-items: center; font-weight: 800; font-size: 19px; margin-bottom: 6px; }
+  .rail .item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; }
+  .rail .item .ic { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; }
+  .rail .item.on .ic { background: rgba(255, 255, 255, 0.22); }
+  .rail .me { margin-top: auto; margin-bottom: 14px; position: relative; }
+  .rail .me img { border-radius: 8px; }
+  .rail .me i { position: absolute; right: -3px; bottom: -3px; width: 12px; height: 12px; border-radius: 50%; background: #2bac76; border: 2.5px solid #3f0e40; }
+  .side { position: absolute; left: 72px; top: 44px; bottom: 6px; width: 268px; background: #5a2a5c; border-radius: 9px 0 0 9px; color: rgba(255, 255, 255, 0.78); padding: 10px 8px; font-size: 15px; }
+  .side .head { display: flex; align-items: center; justify-content: space-between; color: #fff; font-weight: 800; font-size: 18px; padding: 4px 8px 12px; }
+  .side .row { display: flex; align-items: center; gap: 9px; height: 28px; padding: 0 10px; border-radius: 6px; }
+  .side .row.on { background: rgba(255, 255, 255, 0.92); color: #3f0e40; font-weight: 700; }
+  .side .row.unread { color: #fff; font-weight: 700; }
+  .side .hash { width: 18px; text-align: center; opacity: 0.9; }
+  .side .section { margin: 14px 0 4px; padding: 0 10px; font-size: 14px; display: flex; gap: 6px; align-items: center; }
+  .side .row img { border-radius: 5px; }
+  .side .badge { margin-left: auto; background: #cd2553; color: #fff; border-radius: 9px; font-size: 12px; font-weight: 700; padding: 0 7px; line-height: 18px; }
+  .main { position: absolute; left: 340px; right: 6px; top: 44px; bottom: 6px; background: #fff; border-radius: 0 9px 9px 0; display: flex; flex-direction: column; overflow: hidden; }
+  .chan { height: 50px; flex: none; display: flex; align-items: center; padding: 0 16px 0 20px; gap: 8px; font-weight: 800; font-size: 18px; }
+  .chan .end { margin-left: auto; display: flex; gap: 12px; align-items: center; font-weight: 600; font-size: 13px; color: #616061; }
+  .stack { display: flex; border: 1px solid #ddd; border-radius: 7px; padding: 3px 6px 3px 4px; gap: 6px; align-items: center; }
+  .stack span { display: flex; }
+  .stack img { border-radius: 5px; border: 2px solid #fff; margin-right: -7px; }
+  .tabs { flex: none; display: flex; gap: 22px; padding: 0 20px; border-bottom: 1px solid #e8e8e8; font-size: 13px; font-weight: 600; color: #616061; }
+  .tabs span { padding: 0 0 9px; display: flex; gap: 6px; align-items: center; }
+  .tabs .on { color: #1d1c1d; box-shadow: inset 0 -2px #3f0e40; }
+  .feed { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; padding-bottom: 6px; }
+  .day { display: flex; align-items: center; margin: 14px 0 6px; }
+  .day::before, .day::after { content: ""; flex: 1; height: 1px; background: #e8e8e8; }
+  .day span { border: 1px solid #e0e0e0; border-radius: 24px; padding: 3px 14px; font-size: 13px; font-weight: 700; }
+  .msg { display: flex; gap: 9px; padding: 7px 20px; line-height: 1.46; }
+  .msg > img { border-radius: 7px; margin-top: 3px; }
+  .msg .who { display: flex; align-items: baseline; gap: 8px; }
+  .msg .who b { font-weight: 800; }
+  .msg .who time { font-size: 12px; color: #616061; }
+  .app-tag { font-size: 10px; font-weight: 700; color: #616061; background: #e8e8e8; border-radius: 3px; padding: 1px 3px; }
+  .msg p { margin: 1px 0 0; }
+  .link { color: #1264a3; }
+  .unfurl { margin-top: 7px; border-left: 4px solid #dddddd; padding: 2px 0 2px 12px; max-width: 620px; }
+  .unfurl .src { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
+  .unfurl .src i { width: 16px; height: 16px; border-radius: 50%; background: #1f2328; }
+  .unfurl h5 { margin: 3px 0 2px; font-size: 15px; color: #1264a3; font-weight: 700; }
+  .unfurl p { color: #1d1c1d; }
+  .unfurl .meta { display: flex; gap: 30px; margin-top: 6px; font-size: 13px; }
+  .unfurl .meta b { display: block; font-size: 13px; }
+  .reacts { display: flex; gap: 5px; margin-top: 6px; }
+  .reacts span { border: 1px solid #e0e0e0; background: #f6f6f6; border-radius: 12px; padding: 0 8px; font-size: 12px; line-height: 22px; font-weight: 600; color: #1d1c1d; }
+  .reacts span.mine { border-color: #1d9bd1; background: #e8f5fa; color: #1264a3; }
+  .threadline { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; }
+  .threadline img { border-radius: 4px; }
+  .threadline b { color: #1264a3; font-weight: 700; }
+  .threadline span { color: #616061; }
+  .composer { flex: none; margin: 0 20px 18px; border: 1px solid #b9b9b9; border-radius: 9px; }
+  .composer .fmt { display: flex; gap: 18px; padding: 8px 12px; background: #f8f8f8; border-radius: 9px 9px 0 0; color: #8a8a8a; font-weight: 700; font-size: 14px; }
+  .composer .text { padding: 10px 12px; color: #868686; }
+  .composer .bar { display: flex; gap: 14px; padding: 6px 10px 8px; color: #616061; align-items: center; font-size: 14px; }
+  .composer .send { margin-left: auto; width: 30px; height: 26px; border-radius: 5px; background: #f0f0f0; display: grid; place-items: center; }
+  [data-from="1"], [data-from="2"] { display: none; }
+  body.v1 [data-from="1"], body.v2 [data-from="1"], body.v2 [data-from="2"] { display: flex; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <div class="nav">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".5"><path d="m6 3 5 5-5 5"/></svg>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg>
+    </div>
+    <div class="search"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>Search Fernwood</div>
+    <div class="help"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="7.25"/><path d="M7 7a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9v.7"/><circle cx="9" cy="12.8" r=".4" fill="currentColor"/></svg></div>
+  </div>
+  <div class="rail">
+    <div class="ws">F</div>
+    <div class="item on"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2.5 2.5 8.6V17a1 1 0 0 0 1 1H8v-5h4v5h4.5a1 1 0 0 0 1-1V8.6Z"/></svg></span>Home</div>
+    <div class="item"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 15.5V5A1.5 1.5 0 0 1 5 3.5h10A1.5 1.5 0 0 1 16.5 5v7a1.5 1.5 0 0 1-1.5 1.5H6.5Z"/></svg></span>DMs</div>
+    <div class="item"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 14V9a5 5 0 0 1 10 0v5l1.5 2h-13Z"/><path d="M8 18h4"/></svg></span>Activity</div>
+    <div class="item"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h8v14l-4-3-4 3Z"/></svg></span>Later</div>
+    <div class="item"><span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="4.5" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="15.5" cy="10" r="1.6"/></svg></span>More</div>
+    <div class="me"><img src="img/sam.jpg" width="36" height="36" alt=""><i></i></div>
+  </div>
+  <div class="side">
+    <div class="head">Fernwood <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12.5 3.5 14.5 5.5 7 13l-3 .9.9-3Z"/></svg></div>
+    <div class="row"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 12.5V4A1.5 1.5 0 0 1 4 2.5h8A1.5 1.5 0 0 1 13.5 4v5.5A1.5 1.5 0 0 1 12 11H5Z"/></svg>Threads</div>
+    <div class="row"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10V8a5 5 0 0 1 10 0v2"/><rect x="2" y="9.5" width="3" height="4.5" rx="1"/><rect x="11" y="9.5" width="3" height="4.5" rx="1"/></svg>Huddles</div>
+    <div class="row"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8.5 14 2.5 11 14l-3.5-4Z"/></svg>Drafts and sent</div>
+    <div class="section"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M1 3h8L5 7.5Z"/></svg>Channels</div>
+    <div class="row"><span class="hash">#</span>general</div>
+    <div class="row unread"><span class="hash">#</span>releases</div>
+    <div class="row"><span class="hash">#</span>design</div>
+    <div class="row on"><span class="hash">#</span>web-team</div>
+    <div class="row"><span class="hash">#</span>billing-alerts</div>
+    <div class="row"><span class="hash">#</span>random</div>
+    <div class="section"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M1 3h8L5 7.5Z"/></svg>Direct messages</div>
+    <div class="row unread"><img src="img/noah.jpg" width="20" height="20" alt="">Noah Park<span class="badge">1</span></div>
+    <div class="row"><img src="img/priya.jpg" width="20" height="20" alt="">Priya Nair</div>
+    <div class="row"><img src="img/amara.jpg" width="20" height="20" alt="">Amara Okafor</div>
+    <div class="row"><img src="img/jonas.jpg" width="20" height="20" alt="">Jonas Weber</div>
+    <div class="section"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M1 3h8L5 7.5Z"/></svg>Apps</div>
+    <div class="row"><span style="width:20px;height:20px;border-radius:5px;background:#1f2328;display:block"></span>GitHub</div>
+  </div>
+  <div class="main">
+    <div class="chan"># web-team <svg width="12" height="12" viewBox="0 0 10 10" fill="currentColor"><path d="M1 3h8L5 7.5Z"/></svg>
+      <div class="end"><div class="stack"><span><img src="img/noah.jpg" width="22" height="22" alt=""><img src="img/priya.jpg" width="22" height="22" alt=""><img src="img/amara.jpg" width="22" height="22" alt=""></span><b style="margin-left:6px">12</b></div>
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 10V8a5 5 0 0 1 10 0v2"/><rect x="2" y="9.5" width="3" height="4.5" rx="1"/><rect x="11" y="9.5" width="3" height="4.5" rx="1"/></svg></div>
+    </div>
+    <div class="tabs"><span class="on">Messages</span><span>Canvas</span><span>Files</span><span>Pins</span><span>+</span></div>
+    <div class="feed">
+      <div class="day"><span>Today</span></div>
+      <div class="msg"><img src="img/priya.jpg" width="38" height="38" alt=""><div>
+        <div class="who"><b>Priya Nair</b><time>11:52 AM</time></div>
+        <p>Reminder: the release train leaves at 4pm today. Anything not approved by 3:30 rides the next one.</p>
+        <div class="reacts"><span>👍 7</span><span>🚂 3</span></div></div></div>
+      <div class="msg"><img src="img/jonas.jpg" width="38" height="38" alt=""><div>
+        <div class="who"><b>Jonas Weber</b><time>12:03 PM</time></div>
+        <p>Preview deploys are back under a minute after the cache fix 🎉</p>
+        <div class="reacts"><span>🎉 6</span><span class="mine">🚀 3</span></div></div></div>
+      <div class="msg"><img src="img/noah.jpg" width="38" height="38" alt=""><div>
+        <div class="who"><b>Noah Park</b><time>2:08 PM</time></div>
+        <p>Saw this on X this morning: brisk, an open source tool that runs only the tests a change touches. Could take our CI from 14 minutes to under 2 👀</p>
+        <p class="link">https://github.com/brisk-dev/brisk</p>
+        <div class="unfurl">
+          <div class="src"><i></i>GitHub</div>
+          <h5>brisk-dev/brisk</h5>
+          <p>Fast, open source test selection: run only the tests your change touches.</p>
+          <div class="meta"><span><b>Stars</b>8.4k</span><span><b>Language</b>Rust</span><span><b>License</b>MIT</span></div>
+        </div>
+        <div class="reacts"><span>👀 4</span><span class="mine">🔥 3</span></div>
+        <div class="threadline"><img src="img/sam.jpg" width="22" height="22" alt=""><img src="img/amara.jpg" width="22" height="22" alt=""><b>5 replies</b><span>Last reply 6 minutes ago</span></div></div></div>
+      <div class="msg"><img src="img/sam.jpg" width="38" height="38" alt=""><div>
+        <div class="who"><b>Sam Ortiz</b><time>2:15 PM</time></div>
+        <p>Trying it on the billing tests now.</p></div></div>
+      <div class="msg" data-from="1"><img src="img/amara.jpg" width="38" height="38" alt=""><div>
+        <div class="who"><b>Amara Okafor</b><time>2:21 PM</time></div>
+        <p>Love it. Is it MIT? Legal wants every new dependency on the list in docs/dependencies.md before it ships.</p>
+        <div class="reacts"><span>✅ 2</span></div></div></div>
+      <div class="msg" data-from="2"><img src="img/sam.jpg" width="38" height="38" alt=""><div>
+        <div class="who"><b>Sam Ortiz</b><time>2:40 PM</time></div>
+        <p>MIT, yes. Ran it on billing: 12 of 1,284 tests, 2.1 seconds instead of 14 minutes 🤯 Adding it to CI and to the list.</p>
+        <div class="reacts"><span class="mine">🚀 6</span><span>🙌 3</span></div></div></div>
+      <div class="msg" data-from="2"><img src="img/jonas.jpg" width="38" height="38" alt=""><div>
+        <div class="who"><b>Jonas Weber</b><time>2:44 PM</time></div>
+        <p>If it is green by 3:30 it rides the 4pm train 🚂</p></div></div>
+    </div>
+    <div class="composer">
+      <div class="fmt"><span>B</span><span><i>I</i></span><span><s>S</s></span><span>🔗</span><span>☰</span><span>&lt;/&gt;</span></div>
+      <div class="text">Message #web-team</div>
+      <div class="bar"><span>＋</span><span>Aa</span><span>☺</span><span>@</span><span class="send"><svg width="14" height="14" viewBox="0 0 16 16" fill="#8a8a8a"><path d="M1.5 14.5 15 8 1.5 1.5 3 7l7 1-7 1Z"/></svg></span></div>
+    </div>
+  </div>
+  <script>
+    // The channel fills in over the afternoon: Amara's question, then the approval.
+    window.variants = 3;
+    window.variant = (i) => { document.body.className = 'v' + i; };
+  </script>
+</body>
+</html>

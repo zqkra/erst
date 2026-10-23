@@ -295,8 +295,8 @@ struct PreviewDataset: Sendable {
 enum PreviewCategory {
     static func of(_ app: AppRef) -> ActivityCategory {
         switch app.bundleID {
-        case PreviewApps.zed.bundleID, PreviewApps.notes.bundleID: .building
-        case PreviewApps.mail.bundleID, PreviewApps.whatsApp.bundleID: .talking
+        case PreviewApps.zed.bundleID, PreviewApps.ghostty.bundleID: .building
+        case PreviewApps.mail.bundleID, PreviewApps.slack.bundleID: .talking
         case PreviewApps.safari.bundleID, PreviewApps.x.bundleID: .reading
         default: .other
         }

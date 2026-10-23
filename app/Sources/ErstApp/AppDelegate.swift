@@ -202,7 +202,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let state = await environment.permissions.state()
             onboarding?.update(state)
             if !UserDefaults.standard.bool(forKey: OnboardingController.completedKey) {
-                onboarding?.showWelcome()
+                onboarding?.resume()
             } else if !state.screenRecording {
                 onboarding?.showPermissions()
             } else {

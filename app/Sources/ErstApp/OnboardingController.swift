@@ -13,6 +13,9 @@ private let onboardingLog = Logger(subsystem: "app.erst.Erst", category: "Onboar
 @MainActor
 final class OnboardingController {
     static let completedKey = "onboardingCompleted"
+    /// Set once the user is past the welcome, so a relaunch in the middle picks up at the
+    /// permissions instead of greeting them again.
+    private static let passedWelcomeKey = "onboardingPassedWelcome"
     private static let contentSize = NSSize(
         width: OnboardingLayout.windowWidth, height: OnboardingLayout.windowHeight)
     private(set) var awaitingContinue = false
@@ -59,7 +62,12 @@ final class OnboardingController {
         if window.isVisible { render() }
     }
 
-    func showWelcome() { show(.welcome) }
+    /// Starts onboarding, or picks it up at the permissions when the user already passed the
+    /// welcome: a Screen Recording grant reaches only the next launch, so Erst quits and reopens
+    /// in the middle of onboarding.
+    func resume() {
+        show(UserDefaults.standard.bool(forKey: Self.passedWelcomeKey) ? .permissions : .welcome)
+    }
 
     func showPermissions() {
         if window.isVisible {
@@ -93,11 +101,16 @@ final class OnboardingController {
     private func show(_ step: OnboardingStep) {
         awaitingContinue = true
         self.step = step
+        if step != .welcome {
+            UserDefaults.standard.set(true, forKey: Self.passedWelcomeKey)
+        }
         render()
         guard !window.isVisible else { return }
         WindowPlacement.show(window)
         let screen = window.screen?.localizedName ?? "no screen"
-        onboardingLog.notice("Onboarding shown on \(screen, privacy: .public)")
+        onboardingLog.notice(
+            "Onboarding shown on \(screen, privacy: .public) at \(String(describing: step), privacy: .public)"
+        )
     }
 
     private func render() {
@@ -207,19 +220,22 @@ final class OnboardingController {
     }
 
     /// macOS hands a new Screen Recording grant to the next launch of the process, not this one.
+    /// Only one Erst runs at a time, so a new copy opened now would step aside for this one: a
+    /// small shell waits for this process to exit, then opens Erst again.
     private func quitAndReopen() {
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.createsNewApplicationInstance = true
-        Task {
-            do {
-                _ = try await NSWorkspace.shared.openApplication(
-                    at: Bundle.main.bundleURL, configuration: configuration)
-            } catch {
-                onboardingLog.error(
-                    "Reopening after the grant failed: \(error.localizedDescription, privacy: .public)")
-                return
-            }
-            NSApp.terminate(nil)
+        let waiter = Process()
+        waiter.executableURL = URL(filePath: "/bin/sh")
+        waiter.arguments = [
+            "-c", #"while /bin/kill -0 "$1" 2>/dev/null; do /bin/sleep 0.2; done; /usr/bin/open "$2""#,
+            "erst-reopen", String(ProcessInfo.processInfo.processIdentifier), Bundle.main.bundlePath,
+        ]
+        do {
+            try waiter.run()
+        } catch {
+            onboardingLog.error(
+                "Reopening after the grant failed: \(error.localizedDescription, privacy: .public)")
+            return
         }
+        NSApp.terminate(nil)
     }
 }

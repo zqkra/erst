@@ -1,5 +1,7 @@
 # Pricing
 
+The plans for work are not on sale yet; they arrive in the coming weeks, as an update.
+
 The code is open source under AGPL-3.0. Personal use of the app is free. A license pays for using Erst for work and for the official signed builds. Pro pays for what costs money to run.
 
 | Feature | Free | License | Pro |
@@ -24,4 +26,4 @@ The code is open source under AGPL-3.0. Personal use of the app is free. A licen
 | License | 29 USD per year, or 59 USD once |
 | Pro | 8 USD per month |
 
-Rule for "use for work": if Erst helps you earn money, buy a license.
+Rule for "use for work", once the plans are on sale: if Erst helps you earn money, buy a license.

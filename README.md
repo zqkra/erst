@@ -170,4 +170,4 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) before you open a pull request. The desi
 
 ## License
 
-Erst is open source under [AGPL-3.0](LICENSE), with a commercial license available. Personal use is free. If Erst helps you earn money, buy a license. See [docs/PRICING.md](docs/PRICING.md).
+Erst is open source under [AGPL-3.0](LICENSE). It is free for personal use, and plans for work arrive soon. [docs/PRICING.md](docs/PRICING.md) has the plan.

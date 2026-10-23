@@ -13,7 +13,7 @@ Tiers match [docs/PRICING.md](PRICING.md). Items marked License or Pro need that
 - Settings cover launch at login, capture interval (1, 2, 5, or 10 seconds), compression, excluded apps, and how far back agents read.
 - Password fields are never recorded. Erase the last hour removes the screens and text for that hour, and their search entries, with secure delete.
 - The `erst` CLI and MCP server ship inside the app. Settings > Agents connects Claude Code, Codex, and Cursor in one click.
-- A stable self-signed identity keeps the Screen Recording permission across rebuilds. Notarized builds wait for an Apple Developer account.
+- A stable self-signed identity keeps the Screen Recording permission across development rebuilds. Releases are signed with a Developer ID and notarized.
 
 ## 0.2 Memory that helps
 

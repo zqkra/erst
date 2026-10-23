@@ -2,7 +2,7 @@
 # Build, sign, notarize, and publish one release of Erst, with the feed the in-app updater reads.
 #
 #   scripts/release.sh NOTES_FILE                publish the version in Cargo.toml on GitHub Releases
-#   scripts/release.sh --unnotarized NOTES_FILE  publish without Apple's notarization, until it arrives
+#   scripts/release.sh --unnotarized NOTES_FILE  publish without Apple's notarization (never public)
 #   scripts/release.sh --local NOTES_FILE        build the archive and feed in dist/release, publish nothing
 #
 # NOTES_FILE holds what changed, one sentence per line. Settings, About shows these lines.

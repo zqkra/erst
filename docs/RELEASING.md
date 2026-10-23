@@ -4,19 +4,17 @@ Every version of Erst ships the same way: an `Erst.dmg` and an `appcast.xml` att
 
 Versions are plain numbers: 0.1.0, then 0.1.1, 0.1.2, and so on. There is no beta channel.
 
-## Until notarization arrives
+## Signing
 
-`scripts/release.sh --unnotarized notes.txt` publishes a release without Apple's notarization. It is signed with the `Erst Development` certificate, so macOS keeps Erst's permissions across updates, and the release page and the README tell people to click Open Anyway in System Settings, Privacy & Security, the first time. Sparkle checks every update against the EdDSA key, so updates install without that step.
-
-The script refuses an ad hoc signature: it changes with every build, and macOS would forget Screen Recording and Accessibility at each update. Back up the certificate, because every release must be signed with the same one:
+Releases are signed with `Developer ID Application: Santiago Gaviria (J5T6L3M274)` and notarized by Apple, so macOS opens Erst on the first launch without a warning. macOS ties Screen Recording and Accessibility to the team ID, so a renewed certificate of the same team keeps every user's permissions, and any other certificate makes every user grant them again. Back up the certificate and its private key:
 
 1. Open Keychain Access, choose the login keychain, then My Certificates.
-2. Control-click `Erst Development`, choose Export, save it as a `.p12` file, and give it a password.
+2. Control-click `Developer ID Application: Santiago Gaviria`, choose Export, save it as a `.p12` file, and give it a password.
 3. Keep the file and its password in a password manager, then delete the file.
 
-On another Mac, double-click the `.p12` to import it before you build. Do not run `scripts/dev-identity.sh` there: it would create a different certificate.
+On another Mac, double-click the `.p12` to import it before you build.
 
-When the Developer ID arrives, the first notarized release changes the certificate once, so macOS asks each user for Screen Recording and Accessibility again after that update. Updates keep working, because they are checked against the same EdDSA key.
+`scripts/release.sh --unnotarized notes.txt` publishes a release signed with the self-signed `Erst Development` certificate and without notarization, the way 0.1.0 first shipped privately. Do not use it for a public release: macOS stops its first launch, and the certificate change takes the permissions away. The script refuses an ad hoc signature in either mode.
 
 ## Once per Mac
 
@@ -24,7 +22,7 @@ When the Developer ID arrives, the first notarized release changes the certifica
 2. Store notarization credentials under a profile name. The password is an app-specific password from appleid.apple.com:
 
    ```sh
-   xcrun notarytool store-credentials erst-notary --apple-id you@example.com --team-id TEAMID
+   xcrun notarytool store-credentials erst-notary --apple-id you@example.com --team-id J5T6L3M274
    ```
 
 3. Put the update signing key in the login keychain. It already is on the Mac that created it (account `erst`). On another Mac, import the exported file:
@@ -46,7 +44,7 @@ app/.build/artifacts/sparkle/Sparkle/bin/generate_keys --account erst -x erst-sp
 3. Run the release:
 
    ```sh
-   ERST_SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+   ERST_SIGN_IDENTITY="Developer ID Application: Santiago Gaviria (J5T6L3M274)" \
    ERST_NOTARY_PROFILE=erst-notary \
    scripts/release.sh notes.txt
    ```
@@ -69,4 +67,4 @@ Build the feed from a higher version than the copy you test with. Sparkle waits 
 
 ## The first public release
 
-Publish 0.1.0 with `scripts/release.sh --unnotarized notes.txt`, or without the flag once the Developer ID is set up, then make the repository public. The feed URL and the download link only resolve once the repository is public and has a release.
+0.1.0 is published, notarized, while the repository is private. Make the repository public to launch: the feed URL and the download link only resolve once the repository is public and has a release.

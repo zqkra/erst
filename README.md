@@ -150,8 +150,6 @@ The core is Rust and the app is Swift:
 3. Allow Screen Recording, so Erst can see the screen, and Accessibility, so it can read window titles and page addresses.
 4. Press <kbd>⌥</kbd> <kbd>Space</kbd>.
 
-<sub>Erst 0.1 is not notarized by Apple yet; notarization is on its way. Until then, macOS stops the first launch: open System Settings, Privacy &amp; Security, and click Open Anyway. Updates install without this step.</sub>
-
 Erst needs macOS 26 or later on Apple silicon. It updates itself: when a new version is out, the menu bar offers it, and Settings, About shows what changed and installs it with one click. Every update is checked against Erst's signature before it installs.
 
 ## Build from source

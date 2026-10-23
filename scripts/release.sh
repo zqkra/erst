@@ -56,7 +56,8 @@ check_publishable() {
 # update. A release must carry a certificate.
 check_signed() {
     local authority
-    authority="$(codesign -dvv "$ERST_ROOT/dist/Erst.app" 2>&1 | awk -F= '/^Authority=/ { print $2; exit }')"
+    # awk reads to the end, so codesign never writes into a closed pipe under pipefail.
+    authority="$(codesign -dvv "$ERST_ROOT/dist/Erst.app" 2>&1 | awk -F= '/^Authority=/ && !found { print $2; found = 1 }')"
     [[ -n "$authority" ]] ||
         fail "dist/Erst.app is signed ad hoc; import the Erst Development certificate (docs/RELEASING.md)"
     printf '==> Signed by %s\n' "$authority"
